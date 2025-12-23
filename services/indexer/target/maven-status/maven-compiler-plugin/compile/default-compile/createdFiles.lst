@@ -1,0 +1,9 @@
+com\company\indexer\service\OpenSearchIndexer.class
+com\company\indexer\config\KafkaConfig.class
+com\company\indexer\service\IndexerService.class
+com\company\indexer\IndexerApplication.class
+com\company\indexer\kafka\AnchorCompletedListener.class
+com\company\indexer\model\AnchorEntity.class
+com\company\indexer\dto\AnchorCompletedDto.class
+com\company\indexer\repository\AnchorRepository.class
+com\company\indexer\web\AnchorController.class

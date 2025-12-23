@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "IngestEvent",
+  "namespace": "com.yourorg.supplychain",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "batch_id", "type": "string"},
+    {"name": "type", "type": "string"},
+    {"name": "actor", "type": ["null", "string"], "default": null},
+    {"name": "filename", "type": "string"},
+    {"name": "minio_key", "type": "string"},
+    {"name": "data_cid", "type": ["null", "string"], "default": null},
+    {"name": "data_hash", "type": "string"},
+    {"name": "content_size", "type": "long"},
+    {"name": "timestamp", "type": "string"}
+  ]
+}

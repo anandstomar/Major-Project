@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:indexer}?currentSchema=public&options=-c%20timezone=UTC
+    username: ${DB_USER:indexer}
+    password: ${DB_PASS:indexerpwd}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    consumer:
+      group-id: indexer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+app:
+  topics:
+    anchors-completed: ${ANCHORS_COMPLETED_TOPIC:anchors.completed}
+
+opensearch:
+  url: ${OPENSEARCH_URL:http://localhost:9200}

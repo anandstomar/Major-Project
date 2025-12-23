@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package anchorsvc;
+
+option go_package = "github.com/yourorg/majorproject/services/anchor-service/proto;proto";
+
+message AnchorSubmitRequest {
+  string request_id = 1;
+  string merkle_root = 2;
+  repeated string preview_ids = 3;
+  repeated string events = 4;
+  uint64 estimated_gas = 5;
+  string submitter = 6;
+}
+
+message AnchorSubmitResponse {
+  string request_id = 1;
+  string merkle_root = 2;
+  string tx_hash = 3;
+  uint64 block_number = 4;
+  string status = 5;
+  string submitted_at = 6;
+}
+
+service AnchorSubmitService {
+  rpc SubmitAnchor(AnchorSubmitRequest) returns (AnchorSubmitResponse);
+}
