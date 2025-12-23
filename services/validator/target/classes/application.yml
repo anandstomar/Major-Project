@@ -27,3 +27,6 @@ app:
   batching:
     batch-size: ${BATCH_SIZE:10}
     batch-time-ms: ${BATCH_TIME_MS:60000}
+
+server:
+  port: 8084
