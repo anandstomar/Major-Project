@@ -1,0 +1,11 @@
+{
+  "request_id":"req-6664dffe-1add-47ae-8b16-5b95dfa22f03",
+  "merkle_root":"0x41c5498081e99008ac3ccc53af8c585b1963f3a4e60bdd3cb5dfa1c4d947f903",
+  "tx_hash":"0x1883395b82f6eb76",
+  "block_number":101096,
+  "submitted_at":"2025-12-20T22:00:19Z",
+  "submitter":"ops@acme",
+  "status":"success",
+  "preview_ids":["preview-fadd3055-8f2c-4c9a-9c03-1fa3dd3b2d76"],
+  "events":["evt-21c086bc-5bfe-4592-bb40-497b4ca9aed8"]
+}

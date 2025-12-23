@@ -1,0 +1,29 @@
+spring:
+  kafka:
+    consumer:
+      bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+      group-id: ${GROUP_ID:validator-group}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+app:
+  ingest-topic: ${INGEST_TOPIC:ingest.events}
+  validated-topic: ${VALIDATED_TOPIC:events.validated}
+  preview-topic: ${ANCHORS_PREVIEW_TOPIC:anchors.preview}
+  minio:
+    endpoint: ${MINIO_ENDPOINT:localhost}
+    port: ${MINIO_PORT:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:ingest}
+  ipfs:
+    api: ${IPFS_API_URL:http://localhost:5001}
+  batching:
+    batch-size: ${BATCH_SIZE:10}
+    batch-time-ms: ${BATCH_TIME_MS:60000}

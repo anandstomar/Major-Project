@@ -1,0 +1,25 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Anchor {
+  blockNumber: Int
+  eventsJson: String
+  id: Int!
+  merkleRoot: String
+  requestId: String!
+  status: String
+  submittedAt: DateTime
+  submitter: String
+  txHash: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Query {
+  anchor(requestId: String!): Anchor
+  anchors: [Anchor!]!
+}

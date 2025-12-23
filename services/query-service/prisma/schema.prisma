@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+  moduleFormat = "cjs"
+  previewFeatures = ["driverAdapters"]
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Anchor {
+  id          Int      @id @default(autoincrement())
+  requestId   String   @unique
+  merkleRoot  String? 
+  txHash      String?
+  blockNumber Int?     
+  status      String?
+  submittedAt DateTime? @map("submitted_at")
+  eventsJson  String?   @map("events_json")
+  submitter   String?
+
+  @@map("anchors")
+}
