@@ -10,12 +10,12 @@ datasource db {
 }
 
 model Anchor {
-  id          Int      @id @default(autoincrement())
-  requestId   String   @unique
-  merkleRoot  String? 
-  txHash      String?
-  blockNumber Int?     
-  status      String?
+  id          Int       @id @default(autoincrement())
+  requestId   String    @unique @map("request_id") 
+  merkleRoot  String?   @map("merkle_root")
+  txHash      String?   @map("tx_hash")
+  blockNumber Int?      @map("block_number")
+  status      String?   
   submittedAt DateTime? @map("submitted_at")
   eventsJson  String?   @map("events_json")
   submitter   String?

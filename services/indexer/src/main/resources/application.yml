@@ -26,3 +26,7 @@ app:
 
 opensearch:
   url: ${OPENSEARCH_URL:http://localhost:9200}
+
+server:
+  port: 8083
+
