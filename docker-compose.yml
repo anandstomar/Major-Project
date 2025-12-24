@@ -25,6 +25,8 @@
     ports:
       - "9092:9092"
 
+    
+
   minio:
     image: minio/minio:RELEASE.2024-01-16T16-07-38Z
     container_name: minio
@@ -105,6 +107,81 @@
     image: redis:7-alpine
     ports:
       - "6379:6379"
+
+  auditor-verifier:
+    build: ./services/auditor-verifier
+    container_name: auditor-verifier
+    depends_on:
+      - kafka
+      - minio
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - INPUT_TOPIC=anchors.completed
+      - OUTPUT_TOPIC=anchors.verified
+
+  ingest-service:
+    build: ./services/ingest-service
+    container_name: ingest-service
+    depends_on:
+      - kafka
+      - minio
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - PORT=3000
+      - KAFKA_TOPIC=ingest.events
+      # These must be aligned with the lines above
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_SSL=false # Implicitly joins the default network with everyone else
+  
+  query-service:
+    build: ./services/query-service
+    container_name: query-service
+    environment:
+      - PORT=3000
+    networks:
+      - default
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: notification-service
+    depends_on:
+      - kafka
+      - redis
+      - mailhog
+    environment:
+      - PORT=3000
+      # Kafka Config
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_GROUP_ID=notification-group
+      - KAFKA_TOPIC=anchors.completed
+      
+      # Redis Config (Points to container 'redis')
+      - REDIS_URL=redis://redis:6379
+      
+      # MailHog Config (Points to container 'mailhog')
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - EMAIL_FROM=system@blockchain.local
+      - NOTIFY_EMAIL_TO=admin@blockchain.local
+    networks:
+      - default
+
+  edge-proxy:
+    build: ./services/edge-proxy
+    ports:
+      - "8085:8085" 
+    depends_on:
+      - notification-service
+      # - auditor-verifier
+      - ingest-service
+      - query-service
 
  volumes:
   minio-data:

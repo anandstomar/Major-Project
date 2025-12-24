@@ -1,0 +1,6 @@
+apiVersion: v2
+name: substrate-node
+description: Helm chart to run a single Substrate node for dev/test
+type: application
+version: 0.1.0
+appVersion: "1.0"

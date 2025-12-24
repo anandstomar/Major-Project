@@ -50,7 +50,7 @@ const ipfs = createIpfsClient({
 // If running inside Docker, connect to 'kafka:29092'.
 const kafka = new Kafka({
   clientId: process.env.KAFKA_CLIENT_ID || "ingest-service",
-  brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(","),
+  brokers: (process.env.KAFKA_BROKER || process.env.KAFKA_BROKERS || "localhost:9092").split(","),
 });
 
 const producer = kafka.producer();

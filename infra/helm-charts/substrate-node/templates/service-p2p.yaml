@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "substrate-node.fullname" . }}-p2p
+  labels:
+    app.kubernetes.io/name: substrate-node
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: substrate-node
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: p2p
+      port: {{ .Values.service.p2p.port }}
+      targetPort: p2p

@@ -1,0 +1,46 @@
+replicaCount: 1
+
+image:
+  repository: parity/substrate
+  tag: "latest" 
+  pullPolicy: IfNotPresent
+
+node:
+  name: "node-0"
+  chainSpecConfigMap: "substrate-chainspec"
+  args:
+    - "--dev"
+    - "--rpc-external"
+    - "--rpc-methods=Unsafe"
+    - "--rpc-cors=all"
+    - "--alice"
+    - "--validator"
+    - "--base-path"
+    - "/data"
+
+resources:
+  requests:
+    cpu: "500m"    
+    memory: "1Gi"   
+  limits:
+    cpu: "1000m"    
+    memory: "2Gi"   
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+service:
+  rpc:
+    port: 9933
+    type: ClusterIP
+  ws:
+    port: 9944
+  p2p:
+    port: 30333
+
+prometheus:
+  enabled: true
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9615"

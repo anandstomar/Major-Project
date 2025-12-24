@@ -1,0 +1,10 @@
+1. Install the chart:
+   helm install substrate-node infra/helm-charts/substrate-node --namespace substrate --create-namespace
+
+2. Port-forward RPC to test locally:
+   kubectl -n substrate port-forward svc/substrate-node-rpc 9933:9933
+
+3. Test JSON-RPC:
+   curl -s -X POST http://localhost:9933 -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"system_health","id":1}' | jq .
+
+4. Websocket (ws) is available on port 9944 similarly.

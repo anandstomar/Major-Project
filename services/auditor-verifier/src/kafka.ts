@@ -4,7 +4,8 @@ let kafka: Kafka;
 
 export function initKafka(): Kafka {
   if (kafka) return kafka;
-  const brokers = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
+  const rawBrokers = process.env.KAFKA_BROKER || process.env.KAFKA_BROKERS || 'localhost:9092';
+  const brokers = rawBrokers.split(',');
   kafka = new Kafka({
     clientId: process.env.KAFKA_CLIENT_ID || 'auditor-verifier',
     brokers
