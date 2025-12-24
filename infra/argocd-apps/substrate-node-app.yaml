@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: substrate-node
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # UPDATED to match your provided repository name
+    repoURL: 'https://github.com/anandstomar/Major-Project.git'
+    targetRevision: main
+    path: infra/helm-charts/substrate-node
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: substrate
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

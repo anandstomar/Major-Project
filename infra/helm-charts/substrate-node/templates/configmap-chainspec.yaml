@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.node.chainSpecConfigMap }}
+data:
+  # Simple chain spec (dev) placeholder. Replace with actual chainspec JSON if you have one.
+  chainspec.json: |
+    {
+      "name": "local-dev",
+      "id": "local-dev",
+      "chainType": "Local",
+      "bootNodes": [],
+      "properties": {}
+    }

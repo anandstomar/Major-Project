@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "substrate-node.fullname" . | default .Release.Name }}
+  labels:
+    app.kubernetes.io/name: substrate-node
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: substrate-node
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: substrate-node
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        {{- if .Values.prometheus.enabled }}
+        prometheus.io/scrape: {{ index .Values.prometheus.annotations "prometheus.io/scrape" | quote }}
+        prometheus.io/port: {{ index .Values.prometheus.annotations "prometheus.io/port" | quote }}
+        {{- end }}
+    spec:
+      # This block MUST be here to grant permission to the /data volume
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      serviceAccountName: default
+      containers:
+        - name: substrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- range .Values.node.args }}
+            - {{ . | quote }}
+            {{- end }}
+          ports:
+            - name: rpc
+              containerPort: {{ .Values.service.rpc.port }}
+            - name: ws
+              containerPort: {{ .Values.service.ws.port }}
+            - name: p2p
+              containerPort: {{ .Values.service.p2p.port }}
+          volumeMounts:
+            - name: chain-data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: chain-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (include "substrate-node.fullname" .) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: chainspec
+          configMap:
+            name: {{ .Values.node.chainSpecConfigMap }}
