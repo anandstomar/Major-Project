@@ -1,0 +1,30 @@
+replicaCount: 2
+
+image:
+  full: ""
+  repository: ""
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 384Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+ingress:
+  enabled: true
+  hosts:
+    - host: example.local
+      paths:
+        - /
+
+config:
+  envoy:
+    adminPort: 9901
