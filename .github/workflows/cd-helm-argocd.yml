@@ -1,0 +1,67 @@
+name: CD - update ArgoCD manifests with built image tags
+
+on:
+  workflow_run:
+    workflows: ["CI - build & push images"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  update-argocd:
+    # Only run if the CI build was successful and happened on the main branch
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download image manifest artifact from CI
+        uses: actions/download-artifact@v4
+        with:
+          name: image-manifest
+          github-token: ${{ secrets.GHCR_PAT }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Using GHCR_PAT ensures write access even if default permissions are restricted
+          token: ${{ secrets.GHCR_PAT }} 
+
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update ArgoCD app manifests
+        run: |
+          MANIFEST=image-manifest.json
+          echo "Processing Manifest:"
+          cat $MANIFEST
+          
+          # Loop through each service in the manifest
+          for svc in $(jq -r 'keys[]' $MANIFEST); do
+            image=$(jq -r --arg k "$svc" '.[$k]' $MANIFEST)
+            echo "Updating $svc with image $image"
+
+            VALUES_FILE="infra/argocd-apps/${svc}/values.yaml"
+
+            if [ -f "${VALUES_FILE}" ]; then
+              # Update the image repository and tag using yq
+              REPO="${image%:*}"
+              TAG="${image##*:}"
+              
+              yq eval -i ".image.repository = \"$REPO\"" $VALUES_FILE
+              yq eval -i ".image.tag = \"$TAG\"" $VALUES_FILE
+              
+              git add "${VALUES_FILE}"
+            else
+              echo "Warning: No values file found for ${svc} at ${VALUES_FILE}. Skipping."
+            fi
+          done
+
+          # Commit and push changes back to the repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(cd): bump images for CI run ${{ github.event.workflow_run.id }}" || echo "No changes to commit"
+          git push origin main

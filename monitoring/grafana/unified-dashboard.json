@@ -1,0 +1,41 @@
+{
+  "title": "Unified Microservices Health",
+  "panels": [
+    {
+      "title": "Go: Anchor Production Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(anchors_processed_total[5m])) by (status)", "legendFormat": "Go - {{status}}" }
+      ]
+    },
+    {
+      "title": "NestJS: API Request Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(http_requests_total[5m])) by (method, status)", "legendFormat": "NestJS - {{method}} {{status}}" }
+      ]
+    },
+    {
+      "title": "Java: Indexer Processing",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(indexer_received_total[5m]))", "legendFormat": "Java - Received" },
+        { "expr": "sum(rate(indexer_saved_total[5m]))", "legendFormat": "Java - Saved" }
+      ]
+    },
+    {
+      "title": "System: P95 Latency (All Services)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(anchor_submit_latency_seconds_bucket[5m])) by (le))", "legendFormat": "Go Latency" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "NestJS Latency" },
+        { "expr": "histogram_quantile(0.95, sum(rate(indexer_process_duration_seconds_bucket[5m])) by (le))", "legendFormat": "Java Latency" }
+      ]
+    }
+  ],
+  "schemaVersion": 36
+}

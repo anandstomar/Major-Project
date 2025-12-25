@@ -1,0 +1,22 @@
+{
+  "title": "Anchors Overview",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Anchors processed (total)",
+      "targets": [{ "expr": "sum(anchors_processed_total) by (service)" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Submit latency (p95)",
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(anchor_submit_latency_seconds_bucket[5m])) by (le))" }]
+    },
+    {
+      "type": "table",
+      "title": "Recent errors",
+      "targets": [{ "expr": "increase(anchor_submit_errors_total[1h])" }]
+    }
+  ],
+  "schemaVersion": 30,
+  "version": 1
+}

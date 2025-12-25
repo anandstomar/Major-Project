@@ -10,14 +10,28 @@ import (
 
     "github.com/joho/godotenv"
 
-    "github.com/yourorg/majorproject/services/anchor-service/internal"
+    "github.com/yourorg/majorproject/services/anchor-service/internal" 
 )
 
 func main() {
+
+    
     // load .env if present
     _ = godotenv.Load()
 
     logger := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+
+    internal.StartMetricsServer(":2112")
+    logger.Println("metrics server started on :2112")
+
+    // 2. Initialize Jaeger Tracing
+    ctx_telemetry := context.Background()
+    tp, err := internal.InitTracer(ctx_telemetry)
+    if err != nil {
+        logger.Fatalf("failed to init tracer: %v", err)
+    }
+    defer tp.Shutdown(ctx_telemetry)
+
 
     cfg := internal.NewConfigFromEnv()
 

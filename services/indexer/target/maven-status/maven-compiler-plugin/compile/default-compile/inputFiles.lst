@@ -4,6 +4,8 @@ C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com
 C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\web\AnchorController.java
 C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\kafka\AnchorCompletedListener.java
 C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\service\IndexerService.java
+C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\config\OpenTelemetryConfig.java
 C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\config\KafkaConfig.java
 C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\IndexerApplication.java
+C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\metrics\IndexerMetrics.java
 C:\Users\anand\OneDrive\Desktop\Major_Project\services\indexer\src\main\java\com\company\indexer\service\OpenSearchIndexer.java

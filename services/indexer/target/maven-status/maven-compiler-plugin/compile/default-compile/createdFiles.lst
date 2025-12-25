@@ -1,6 +1,8 @@
 com\company\indexer\service\OpenSearchIndexer.class
+com\company\indexer\metrics\IndexerMetrics.class
 com\company\indexer\config\KafkaConfig.class
 com\company\indexer\service\IndexerService.class
+com\company\indexer\config\OpenTelemetryConfig.class
 com\company\indexer\IndexerApplication.class
 com\company\indexer\kafka\AnchorCompletedListener.class
 com\company\indexer\model\AnchorEntity.class

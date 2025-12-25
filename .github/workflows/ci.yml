@@ -1,0 +1,107 @@
+name: CI - build & push images
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "*" ]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  # UPDATED: Matches your successful manual push namespace
+  IMAGE_NAMESPACE: anandstomar/major-project 
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # Build other services even if one fails
+      matrix:
+        service: [anchor-service, indexer, query-service, auth, anchoring-scheduler, ingest-service, validator, notification-service, auditor-verifier]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3 # Updated to v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build & push image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/${{ matrix.service }}
+          file: ./services/${{ matrix.service }}/Dockerfile
+          push: true
+          # Tags using the unique commit SHA for GitOps immutability
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:latest
+
+      - name: Emit image info
+        run: |
+          echo "{ \"service\": \"${{ matrix.service }}\", \"image\": \"${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:${{ github.sha }}\" }" > image-${{ matrix.service }}.json
+
+      - name: Upload per-service image manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-manifests-${{ matrix.service }}
+          path: image-${{ matrix.service }}.json
+
+  collate:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-manifests
+          pattern: image-manifests-* # Downloads all matrix results
+          merge-multiple: true
+
+      - name: Collect all image manifests
+        run: |
+          mkdir -p out
+          echo "{" > out/image-manifest.json
+          FIRST=1
+          # Loop through all JSON files downloaded from the build matrix
+          for f in all-manifests/image-*.json; do
+            SERVICE=$(jq -r .service $f)
+            IMAGE=$(jq -r .image $f)
+            if [ "$FIRST" = "1" ]; then
+              printf '  "%s": "%s"\n' "$SERVICE" "$IMAGE" >> out/image-manifest.json
+              FIRST=0
+            else
+              printf '  ,"%s": "%s"\n' "$SERVICE" "$IMAGE" >> out/image-manifest.json
+            fi
+          done
+          echo "}" >> out/image-manifest.json
+          cat out/image-manifest.json
+
+      - name: Upload consolidated manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-manifest
+          path: out/image-manifest.json
