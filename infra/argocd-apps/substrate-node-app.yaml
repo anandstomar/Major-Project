@@ -6,7 +6,6 @@ metadata:
 spec:
   project: default
   source:
-    # UPDATED to match your provided repository name
     repoURL: 'https://github.com/anandstomar/Major-Project.git'
     targetRevision: main
     path: infra/helm-charts/substrate-node

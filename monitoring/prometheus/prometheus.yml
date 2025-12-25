@@ -1,0 +1,15 @@
+scrape_configs:
+  - job_name: 'indexer'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8083'] # Scrapes your Java app
+
+  - job_name: 'anchor-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:2112'] # Scrapes your Go app
+
+  - job_name: 'query-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:3000'] # Scrapes your NestJS app

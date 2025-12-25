@@ -7,7 +7,7 @@ import (
     "fmt"
     "log"
     "time"
-
+    "go.opentelemetry.io/otel"
     "github.com/minio/minio-go/v7"
     "github.com/segmentio/kafka-go"
     pb "github.com/yourorg/majorproject/services/anchor-service/proto"
@@ -53,6 +53,14 @@ func NewProcessor(cfg *Config, minioClient *minio.Client, submitter *SubmitterCl
 }
 
 func (p *Processor) ProcessMessage(ctx context.Context, msg kafka.Message) error {
+    // --- ADD THIS START ---
+    startTime := time.Now()
+    
+    // Create a Span for Jaeger
+    tracer := otel.Tracer("anchor-service")
+    ctx, span := tracer.Start(ctx, "ProcessMessage")
+    defer span.End()
+    // --- ADD THIS END ---
     var req AnchorRequest
     if err := json.Unmarshal(msg.Value, &req); err != nil {
         p.log.Printf("bad anchors.request JSON: %v", err)
@@ -107,6 +115,9 @@ func (p *Processor) ProcessMessage(ctx context.Context, msg kafka.Message) error
     resp, err := p.submitter.SubmitAnchor(ctx, grpcReq)
     if err != nil {
         p.log.Printf("submitter error: %v", err)
+        // --- ADD THIS: Record Failure ---
+        AnchorsProcessed.WithLabelValues("failed").Inc()
+        // -------------------------
         // publish failed completed with status
         completed := AnchorCompleted{
             RequestID:  req.RequestID,
@@ -139,6 +150,9 @@ func (p *Processor) ProcessMessage(ctx context.Context, msg kafka.Message) error
     if err := p.publishCompleted(completed); err != nil {
         p.log.Printf("publish completed err: %v", err)
     }
+
+    AnchorsProcessed.WithLabelValues("success").Inc()
+    AnchorSubmitLatency.Observe(time.Since(startTime).Seconds())
 
     return nil
 }

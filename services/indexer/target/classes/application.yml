@@ -27,6 +27,26 @@ app:
 opensearch:
   url: ${OPENSEARCH_URL:http://localhost:9200}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus # /metrics is redundant for Spring Boot
+  otlp:
+    tracing:
+      endpoint: http://localhost:4317 # Push to Jaeger OTLP
+  tracing:
+    sampling:
+      probability: 1.0 # Capture everything for dev
+  endpoint:
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  
+
 server:
   port: 8083
 
