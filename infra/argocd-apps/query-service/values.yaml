@@ -13,25 +13,20 @@ service:
 resources:
   limits:
     cpu: 500m
-    memory: 512Mi
+    memory: 768Mi
   requests:
-    cpu: 100m
-    memory: 256Mi
-
-env: |
-  MINIO_BUCKET=previews
-  KAFKA_TOPIC=anchors.request
+    cpu: 200m
+    memory: 384Mi
 
 metrics:
   enabled: true
   path: /metrics
   port: 8080
-  prometheusAnnotations: true
 
 tracing:
   enabled: true
   otlpEndpoint: "http://otel-collector:4317"
 
 config:
-  submitterGrpcAddr: "anchor-submitter:50051"
-  minioEndpoint: "minio:9000"
+  graphql:
+    playground: false

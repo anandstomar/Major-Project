@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
   full: ""
@@ -8,30 +8,24 @@ image:
 
 service:
   type: ClusterIP
-  port: 8080
+  port: 8083
 
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 300m
+    memory: 384Mi
   requests:
     cpu: 100m
     memory: 256Mi
 
-env: |
-  MINIO_BUCKET=previews
-  KAFKA_TOPIC=anchors.request
-
 metrics:
   enabled: true
   path: /metrics
-  port: 8080
-  prometheusAnnotations: true
+  port: 8083
 
 tracing:
   enabled: true
   otlpEndpoint: "http://otel-collector:4317"
 
 config:
-  submitterGrpcAddr: "anchor-submitter:50051"
-  minioEndpoint: "minio:9000"
+  verifyConcurrency: 4
