@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ingest-service
+description: Base Helm chart for ingest-service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
