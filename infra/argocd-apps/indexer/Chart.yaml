@@ -1,0 +1,7 @@
+apiVersion: v2
+name: indexer-deploy
+version: 1.0.0
+dependencies:
+  - name: indexer
+    version: 0.1.0
+    repository: file://../../../helm-charts/indexer

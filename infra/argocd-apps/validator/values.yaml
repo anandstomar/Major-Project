@@ -1,31 +1,3 @@
-replicaCount: 1
-
 image:
-  full: ""
-  repository: ""
-  tag: "latest"
-  pullPolicy: IfNotPresent
-
-service:
-  type: ClusterIP
-  port: 8082
-
-resources:
-  limits:
-    cpu: 400m
-    memory: 512Mi
-  requests:
-    cpu: 150m
-    memory: 256Mi
-
-metrics:
-  enabled: true
-  path: /metrics
-  port: 8082
-
-tracing:
-  enabled: true
-  otlpEndpoint: "http://otel-collector:4317"
-
-config:
-  validatorThreads: 8
+  repository: ghcr.io/anandstomar/major-project/validator
+  tag: latest
