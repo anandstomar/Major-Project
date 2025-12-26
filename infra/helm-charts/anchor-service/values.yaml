@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/anandstomar/major-project/anchor-service
+  repository: ghcr.io/anandstomar/Major-Project/anchor-service
   tag: latest
   pullPolicy: Always
 
