@@ -1,0 +1,7 @@
+apiVersion: v2
+name: auditor-verifier-deploy
+version: 1.0.0
+dependencies:
+  - name: auditor-verifier
+    version: 0.1.0
+    repository: file://../../../helm-charts/auditor-verifier
