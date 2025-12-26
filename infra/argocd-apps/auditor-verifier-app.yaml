@@ -8,12 +8,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/anandstomar/Major_Project.git
+    # CORRECTION HERE: Major-Project (Hyphen, not underscore)
+    repoURL: https://github.com/anandstomar/Major-Project.git
     targetRevision: main
-    # POINT 1: Point directly to the Base Chart
+    
+    # We also keep the "Direct Path" fix from before:
     path: infra/helm-charts/auditor-verifier
     helm:
-      # POINT 2: Tell it to use the Values file from the CD folder
       valueFiles:
       - ../../argocd-apps/auditor-verifier/values.yaml
   destination:
