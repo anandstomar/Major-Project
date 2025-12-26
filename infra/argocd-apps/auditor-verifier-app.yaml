@@ -10,10 +10,12 @@ spec:
   source:
     repoURL: https://github.com/anandstomar/Major_Project.git
     targetRevision: main
-    path: infra/argocd-apps/auditor-verifier
+    # POINT 1: Point directly to the Base Chart
+    path: infra/helm-charts/auditor-verifier
     helm:
+      # POINT 2: Tell it to use the Values file from the CD folder
       valueFiles:
-      - values.yaml
+      - ../../argocd-apps/auditor-verifier/values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default
