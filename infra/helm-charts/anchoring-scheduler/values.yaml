@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/anandstomar/Major-Project/anchoring-scheduler
+  repository: ghcr.io/anandstomar/major-project/anchoring-scheduler
   tag: latest
   pullPolicy: Always
 
