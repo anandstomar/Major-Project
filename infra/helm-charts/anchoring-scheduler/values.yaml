@@ -8,4 +8,4 @@ service:
   port: 80
 
 imagePullSecrets:
-  - name: ghcr-pull-secret
+  - name: ghcrpat
