@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    # CORRECTION HERE: Major-Project (Hyphen, not underscore)
-    repoURL: https://github.com/anandstomar/Major-Project.git
+    # CORRECTION HERE: major-project (Hyphen, not underscore)
+    repoURL: https://github.com/anandstomar/major-project.git
     targetRevision: main
     
     # We also keep the "Direct Path" fix from before:

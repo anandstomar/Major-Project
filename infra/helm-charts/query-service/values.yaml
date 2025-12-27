@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/anandstomar/Major-Project/query-service
+  repository: ghcr.io/anandstomar/major-project/query-service
   tag: latest
   pullPolicy: Always
 
