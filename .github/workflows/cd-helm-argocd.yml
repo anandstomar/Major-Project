@@ -1,4 +1,4 @@
-name: CD - update ArgoCD manifests with built image tags
+name: CD - Update Helm Values
 
 on:
   workflow_run:
@@ -10,58 +10,56 @@ permissions:
   contents: write
 
 jobs:
-  update-argocd:
-    # Only run if the CI build was successful and happened on the main branch
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+  update-helm:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download image manifest artifact from CI
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Image Manifest
         uses: actions/download-artifact@v4
         with:
           name: image-manifest
-          github-token: ${{ secrets.GHCR_PAT }}
           run-id: ${{ github.event.workflow_run.id }}
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          # Using GHCR_PAT ensures write access even if default permissions are restricted
-          token: ${{ secrets.GHCR_PAT }} 
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install yq
         run: |
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
-          sudo chmod +x /usr/local/bin/yq
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
 
-      - name: Update ArgoCD app manifests
+      - name: Update Helm Values
         run: |
-          MANIFEST=image-manifest.json
-          echo "Processing Manifest:"
+          MANIFEST="image-manifest.json"
           cat $MANIFEST
           
-          # Loop through each service in the manifest
+          # Iterate over each service in the JSON
           for svc in $(jq -r 'keys[]' $MANIFEST); do
             image=$(jq -r --arg k "$svc" '.[$k]' $MANIFEST)
-            echo "Updating $svc with image $image"
-
-            VALUES_FILE="infra/argocd-apps/${svc}/values.yaml"
-
-            if [ -f "${VALUES_FILE}" ]; then
-              # Update the image repository and tag using yq
-              REPO="${image%:*}"
-              TAG="${image##*:}"
-              
-              yq eval -i ".image.repository = \"$REPO\"" $VALUES_FILE
-              yq eval -i ".image.tag = \"$TAG\"" $VALUES_FILE
-              
-              git add "${VALUES_FILE}"
+            
+            # Extract Tag (everything after the colon)
+            TAG="${image##*:}"
+            
+            # Define path to values.yaml
+            VALUES_FILE="infra/helm-charts/${svc}/values.yaml"
+            
+            if [ -f "$VALUES_FILE" ]; then
+              echo "Updating $svc in $VALUES_FILE to tag: $TAG"
+              # Update the tag in values.yaml (assumes standard Helm structure)
+              yq -i ".image.tag = \"$TAG\"" "$VALUES_FILE"
+              yq -i ".image.repository = \"${image%%:*}\"" "$VALUES_FILE"
             else
-              echo "Warning: No values file found for ${svc} at ${VALUES_FILE}. Skipping."
+              echo "Warning: $VALUES_FILE not found."
             fi
           done
 
-          # Commit and push changes back to the repo
+      - name: Commit and Push
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(cd): bump images for CI run ${{ github.event.workflow_run.id }}" || echo "No changes to commit"
-          git push origin main
+          git add infra/helm-charts
+          git commit -m "chore(cd): update image tags [skip ci]" || echo "No changes to commit"
+          git push
