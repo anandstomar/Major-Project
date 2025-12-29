@@ -8,15 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    # CORRECTION HERE: major-project (Hyphen, not underscore)
     repoURL: https://github.com/anandstomar/major-project.git
     targetRevision: main
-    
-    # We also keep the "Direct Path" fix from before:
     path: infra/helm-charts/anchor-service
-    helm:
-      valueFiles:
-      - ../../argocd-apps/anchor-service/values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default
