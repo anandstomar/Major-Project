@@ -17,7 +17,7 @@ resources:
     memory: 256Mi
 # env: |
 #   MINIO_ENDPOINT=host.docker.internal:9000
-env: |
+env:
   - name: MINIO_ENDPOINT
     value: "minio:9000"
 metrics:
