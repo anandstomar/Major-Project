@@ -15,8 +15,11 @@ resources:
   requests:
     cpu: 100m
     memory: 256Mi
+# env: |
+#   MINIO_ENDPOINT=host.docker.internal:9000
 env: |
-  MINIO_ENDPOINT=host.docker.internal:9000
+  - name: MINIO_ENDPOINT
+    value: "minio:9000"
 metrics:
   enabled: true
   path: /metrics
