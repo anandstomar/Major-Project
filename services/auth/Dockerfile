@@ -1,14 +1,22 @@
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY package.json package-lock.json* tsconfig.json ./
-RUN npm ci --omit=dev
+# --- Stage 1: Builder ---
+FROM node:18-alpine AS builder
+WORKDIR /usr/src/app
+COPY package*.json ./
+# Install ALL dependencies (including Nest CLI)
+RUN npm ci
 COPY . .
+# Compile the NestJS app
 RUN npm run build
 
+# --- Stage 2: Production Runner ---
 FROM node:18-alpine
-WORKDIR /app
-COPY --from=build /app/package.json /app/package-lock.json* /app/dist ./
+WORKDIR /usr/src/app
+COPY package*.json ./
+# Install ONLY production dependencies
 RUN npm ci --omit=dev
-EXPOSE 8090
+# Copy the built code from the builder stage
+COPY --from=builder /usr/src/app/dist ./dist
+
 ENV NODE_ENV=production
-CMD ["node", "dist/main.js"]
+EXPOSE 3000
+CMD ["node", "dist/main"]
