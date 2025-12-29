@@ -3,7 +3,7 @@ imagePullSecrets:
   - name: ghcrpat
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service
-  tag: "873def3505a09aa7a169b26dd897913c858a107f"
+  tag: "be3abd92f04a6c7275b11e194cf58734e146b8b4"
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -26,7 +26,7 @@ env:
     value: "192.168.1.6:50051"
   - name: KAFKA_BROKERS
     value: "192.168.1.6:9092"
-  - name: KAFKA_ADDR           # Adding common alias just in case
+  - name: KAFKA_ADDR # Adding common alias just in case
     value: "192.168.1.6:9092"
 metrics:
   enabled: true
