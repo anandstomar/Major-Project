@@ -26,7 +26,7 @@ env:
     value: "192.168.1.6:50051"
   - name: KAFKA_BROKERS
     value: "192.168.1.6:9094"
-  - name: KAFKA_ADDR           # Adding common alias just in case
+  - name: KAFKA_ADDR          
     value: "192.168.1.6:9094"
 metrics:
   enabled: true
