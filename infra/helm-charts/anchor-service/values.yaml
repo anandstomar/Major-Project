@@ -1,9 +1,21 @@
+replicaCount: 1
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service
-  tag: 95ade038ec38e6e2f38d0eb7d087cd6947d4c7af
+  tag: "latest"
   pullPolicy: Always
 service:
   type: ClusterIP
-  port: 80
-imagePullSecrets:
-  - name: ghcrpat
+  port: 8080
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+env: |
+  MINIO_ENDPOINT=minio:9000
+metrics:
+  enabled: true
+  path: /metrics
+  port: 8080
