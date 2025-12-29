@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service
-  tag: "a5d311d656d881e999e1dbbc3a4bdc94a1608e01"
+  tag: "bce6117903089dd23b319d56ab3bfd6b7d6a89e2"
   pullPolicy: Always
 service:
   type: ClusterIP
