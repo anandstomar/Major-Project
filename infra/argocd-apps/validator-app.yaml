@@ -14,15 +14,3 @@ spec:
     
     # We also keep the "Direct Path" fix from before:
     path: infra/helm-charts/validator
-    helm:
-      valueFiles:
-      - ../../argocd-apps/validator/values.yaml
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

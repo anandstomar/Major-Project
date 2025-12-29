@@ -14,15 +14,3 @@ spec:
     
     # We also keep the "Direct Path" fix from before:
     path: infra/helm-charts/indexer
-    helm:
-      valueFiles:
-      - ../../argocd-apps/indexer/values.yaml
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

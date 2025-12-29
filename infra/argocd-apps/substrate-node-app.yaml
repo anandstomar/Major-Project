@@ -9,15 +9,3 @@ spec:
     repoURL: 'https://github.com/anandstomar/major-project.git'
     targetRevision: main
     path: infra/helm-charts/substrate-node
-    helm:
-      valueFiles:
-        - values.yaml
-  destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: substrate
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
