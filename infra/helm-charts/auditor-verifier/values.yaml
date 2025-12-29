@@ -1,11 +1,9 @@
 image:
   repository: ghcr.io/anandstomar/major-project/auditor-verifier
-  tag: latest
+  tag: 95ade038ec38e6e2f38d0eb7d087cd6947d4c7af
   pullPolicy: Always
-
 service:
   type: ClusterIP
   port: 80
-
 imagePullSecrets:
   - name: ghcrpat
