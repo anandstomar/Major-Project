@@ -3,7 +3,7 @@ imagePullSecrets:
   - name: ghcrpat
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service
-  tag: "114245a845de18718e0b07247b26b473a30c50eb"
+  tag: "f2dd58730ab389c37073d620331909d4a57f1582"
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -24,7 +24,6 @@ env:
     value: "192.168.1.6:50051"
   - name: KAFKA_BROKERS
     value: "192.168.1.6:9094"
-
 metrics:
   enabled: true
   path: /metrics
