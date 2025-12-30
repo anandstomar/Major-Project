@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/indexer
-  tag: 53024eeda43e1c6a137026a6bfa5fe806b225de0
+  tag: 56dabc78eec30222250e038c2a7436c7ba57e2ee
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -10,12 +10,11 @@ imagePullSecrets:
 env:
   # 1. Database Configuration (Use your Host IP)
   - name: SPRING_DATASOURCE_URL
-    value: "jdbc:postgresql://192.168.1.6:5432/indexer" 
+    value: "jdbc:postgresql://192.168.1.6:5432/indexer"
   - name: SPRING_DATASOURCE_USERNAME
     value: "indexer"
   - name: SPRING_DATASOURCE_PASSWORD
-    value: "indexerpwd" 
-
+    value: "indexerpwd"
   # 2. Kafka Configuration (Use the new port 9094)
   - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
     value: "192.168.1.6:9092"
