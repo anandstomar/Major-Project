@@ -20,5 +20,5 @@ COPY --from=builder /usr/src/app/dist ./dist
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# FIX: Point to the 'src' subfolder inside 'dist'
-CMD ["node", "dist/src/index.js"]
+# Replace your current CMD with this:
+CMD ["node", "dist/src/main.js"]
