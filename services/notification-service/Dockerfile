@@ -21,4 +21,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Replace your current CMD with this:
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]
