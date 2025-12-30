@@ -18,4 +18,4 @@ FROM eclipse-temurin:17-jdk-focal
 WORKDIR /app
 # Copy the built JAR from the 'builder' stage
 COPY --from=builder /app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
