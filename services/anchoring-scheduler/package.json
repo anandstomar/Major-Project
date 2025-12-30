@@ -17,6 +17,9 @@
     "minio": "^8.0.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3",
-    "uuid": "^13.0.0"
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/uuid": "^8.3.4"
   }
 }
