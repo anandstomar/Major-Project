@@ -9,3 +9,6 @@ spec:
     repoURL: 'https://github.com/anandstomar/Major-Project.git'
     targetRevision: main
     path: infra/helm-charts/substrate-node
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default

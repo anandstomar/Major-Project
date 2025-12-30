@@ -14,3 +14,6 @@ spec:
     
     # We also keep the "Direct Path" fix from before:
     path: infra/helm-charts/anchoring-scheduler
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
