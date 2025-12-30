@@ -10,3 +10,15 @@ imagePullSecrets:
 env:
   - name: KAFKA_BROKERS
     value: kafka-external:9092
+  - name: DATABASE_URL
+    value: "postgresql://indexer:indexerpwd@172.18.0.1:5432/indexer?schema=public"
+  - name: POSTGRES_HOST
+    value: "172.18.0.1"
+  - name: POSTGRES_PORT
+    value: "5432"
+  - name: POSTGRES_USER
+    value: "indexer"
+  - name: POSTGRES_PASSWORD
+    value: "indexerpwd"
+  - name: POSTGRES_DB
+    value: "indexer"
