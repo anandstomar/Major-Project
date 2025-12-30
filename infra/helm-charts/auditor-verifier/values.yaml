@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/auditor-verifier
-  tag: b5c491888080e41f7c1b3b302410e6b08c1242ec
+  tag: d1975207a6bafb12bbd6f56baa87c45d2262742d
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -12,3 +12,4 @@ env:
     value: "kafka-external:9092"
   - name: KAFKA_CLIENT_ID
     value: "auditor-verifier"
+
