@@ -1,7 +1,0 @@
-apiVersion: v2
-name: anchoring-scheduler-deploy
-version: 1.0.0
-dependencies:
-  - name: anchoring-scheduler
-    version: 0.1.0
-    repository: file://../../../helm-charts/anchoring-scheduler

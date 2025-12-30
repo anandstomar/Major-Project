@@ -7,3 +7,17 @@ service:
   port: 80
 imagePullSecrets:
   - name: ghcrpat
+env:
+  # 1. Database Configuration (Use your Host IP)
+  - name: SPRING_DATASOURCE_URL
+    value: "jdbc:postgresql://192.168.1.6:5432/indexer" 
+  - name: SPRING_DATASOURCE_USERNAME
+    value: "indexer"
+  - name: SPRING_DATASOURCE_PASSWORD
+    value: "indexerpwd" 
+
+  # 2. Kafka Configuration (Use the new port 9094)
+  - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+    value: "192.168.1.6:9092"
+  - name: KAFKA_BROKERS
+    value: "192.168.1.6:9092"

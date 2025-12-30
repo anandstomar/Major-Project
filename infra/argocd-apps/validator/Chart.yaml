@@ -1,7 +1,0 @@
-apiVersion: v2
-name: validator-deploy
-version: 1.0.0
-dependencies:
-  - name: validator
-    version: 0.1.0
-    repository: file://../../../helm-charts/validator
