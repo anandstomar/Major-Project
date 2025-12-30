@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/indexer
-  tag: 73dd9a711700fb71a3a55bb877299b9aead9da0c
+  tag: 262e047d2552f515cdbe2c2ebd3695959229fb61
   pullPolicy: Always
 service:
   type: ClusterIP
