@@ -10,7 +10,7 @@ imagePullSecrets:
 env:
   # 1. Database Configuration (Use your Host IP)
   - name: SPRING_DATASOURCE_URL
-    value: "jdbc:postgresql://192.168.1.6:5432/indexer"
+    value: "jdbc:postgresql://172.18.0.1:5432/indexer"
   - name: SPRING_DATASOURCE_USERNAME
     value: "indexer"
   - name: SPRING_DATASOURCE_PASSWORD
