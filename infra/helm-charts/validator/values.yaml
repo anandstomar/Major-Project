@@ -9,6 +9,6 @@ imagePullSecrets:
   - name: ghcrpat
 env:
   - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
-    value: "192.168.1.6:9092"
+    value: "kafka-external:9092"
   - name: KAFKA_BROKERS
-    value: "192.168.1.6:9092"
+    value: "kafka-external:9092"
