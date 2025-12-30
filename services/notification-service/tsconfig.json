@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "CommonJS",
+    "rootDir": "src",
     "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,

@@ -12,11 +12,13 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /usr/src/app
 COPY package*.json ./
-# Install ONLY production dependencies
 RUN npm ci --omit=dev
-# Copy the built code from the builder stage
+
+# Copy the built code
 COPY --from=builder /usr/src/app/dist ./dist
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+
+# FIX: Point to the 'src' subfolder inside 'dist'
+CMD ["node", "dist/src/index.js"]
