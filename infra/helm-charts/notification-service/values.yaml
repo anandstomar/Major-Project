@@ -7,3 +7,6 @@ service:
   port: 80
 imagePullSecrets:
   - name: ghcrpat
+env:
+  - name: KAFKA_BROKERS
+    value: kafka-external:9092
