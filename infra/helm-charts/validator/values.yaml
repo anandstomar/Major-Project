@@ -12,3 +12,5 @@ env:
     value: "kafka-external:9092"
   - name: KAFKA_BROKERS
     value: "kafka-external:9092"
+  - name: KAFKA_CLIENT_ID
+    value: "validator"
