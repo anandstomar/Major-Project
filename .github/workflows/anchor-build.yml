@@ -1,0 +1,36 @@
+name: Build Anchor Program
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "programs/anchor_program/**"
+
+jobs:
+  build-anchor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust + Cargo
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install Solana CLI
+        run: |
+          curl -sSfL https://release.solana.com/v1.16.0/install/solana-install-init.sh | sh -s - v1.16.0
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+          solana --version
+      - name: Install Anchor (avm)
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked || true
+          avm install latest
+          avm use latest
+      - name: Build Anchor program (idl + so)
+        working-directory: programs/anchor_program
+        run: |
+          anchor build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: anchor-artifacts
+          path: programs/anchor_program/target

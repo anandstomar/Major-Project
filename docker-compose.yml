@@ -17,12 +17,14 @@
     environment:
      KAFKA_BROKER_ID: 1
      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-     KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
-      # Advertise a DNS name resolvable by k8s:
-    #  KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://kafka-external.default.svc.cluster.local:9092
-     KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://172.18.0.1:9092
-     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+     KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    #  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+    #  KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+    #  KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://172.18.0.1:9092
+    #  KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
      - "9092:9092"
@@ -198,6 +200,31 @@
       # - auditor-verifier
       - ingest-service
       - query-service
+  
+  
+
+  solana:
+    image: solanalabs/solana:v1.18.15
+    ports:
+      - "8899:8899"             # RPC
+      - "8900:8900"             # WebSocket
+      - "8000-8020:8000-8020/udp" # Gossip & TPU (UDP) - Critical
+      - "8000-8020:8000-8020/tcp" # Gossip & TPU (TCP)
+    command: >
+      solana-test-validator 
+      --reset 
+      --quiet 
+      --rpc-bind-address 0.0.0.0      # Listen for RPC on all container interfaces
+      --bind-address 0.0.0.0          # Listen for UDP/Gossip on all container interfaces
+      --gossip-host 127.0.0.1         # ADVERTISE 127.0.0.1 to the Windows client
+      --gossip-port 8001              # Explicitly set gossip port
+      --tpu-port 8003                 # Explicitly set TPU port
+    healthcheck:
+      test: ["CMD", "solana", "gossip"]
+      interval: 10s
+      retries: 5
+    
+   
 
  volumes:
   minio-data:

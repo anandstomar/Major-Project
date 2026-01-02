@@ -1,0 +1,7 @@
+FROM backpackapp/build:v0.29.0
+WORKDIR /app
+COPY . .
+# Create the directory inside container
+RUN mkdir -p target/idl
+# DIRECTLY parse the source code to JSON (No compilation needed)
+RUN anchor idl parse -f src/lib.rs -o target/idl/anchor_program.json

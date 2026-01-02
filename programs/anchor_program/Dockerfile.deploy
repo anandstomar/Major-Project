@@ -1,0 +1,57 @@
+# Offline Builder
+FROM ubuntu:22.04
+
+# 1. Install dependencies (Cached)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    git \
+    udev \
+    libudev-dev \
+    curl \
+    protobuf-compiler
+
+# 2. Install Rust (Cached)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# 3. Install Anchor CLI 0.32.1 (Cached - You save 16 mins here)
+RUN cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --locked
+
+# 4. Install Solana (OFFLINE MODE)
+# We copy the file from Windows into the container
+COPY solana-release-x86_64-unknown-linux-gnu.tar.bz2 /tmp/
+
+# We extract it manually to the correct folder
+RUN mkdir -p /root/.local/share/solana/install/active_release && \
+    tar -jxf /tmp/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -C /tmp && \
+    cp -r /tmp/solana-release/* /root/.local/share/solana/install/active_release/ && \
+    rm -rf /tmp/solana-release* /tmp/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+
+# Update PATH
+ENV PATH="/root/.local/share/solana/install/active_release/bin:${PATH}"
+
+# 5. Generate Wallet
+RUN solana-keygen new --no-bip39-passphrase
+
+# 6. --- SETUP WORKSPACE STRUCTURE ---
+WORKDIR /app
+
+# Copy Anchor.toml
+COPY Anchor.toml .
+
+# Create structure
+RUN mkdir -p programs/anchor_program
+
+# Copy source code
+COPY . .
+
+# Clean up lockfiles
+RUN rm -f programs/anchor_program/Cargo.lock
+
+# 7. Disable Validator Startup Script
+ENTRYPOINT []
+
+# 8. Build command
+CMD ["anchor", "build"]

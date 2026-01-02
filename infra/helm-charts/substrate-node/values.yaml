@@ -33,6 +33,7 @@ persistence:
 service:
   rpc:
     port: 9933
+    # targetPort: 9944
     type: ClusterIP
   ws:
     port: 9944

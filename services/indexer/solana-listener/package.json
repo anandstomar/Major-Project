@@ -1,0 +1,19 @@
+{
+  "name": "solana-listener",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "node dist/solana-listener.js",
+    "dev": "ts-node src/solana-listener.ts"
+  },
+  "dependencies": {
+    "@project-serum/anchor": "^0.25.0",
+    "@solana/web3.js": "^1.69.0",
+    "kafkajs": "^2.2.4",
+    "dotenv": "^16.1.4"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
+  }
+}
