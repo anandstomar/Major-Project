@@ -4,3 +4,4 @@ dist
 *.txt
 *.exe
 solana-release-*.tar.bz2
+*.jar
