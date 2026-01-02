@@ -1,5 +1,6 @@
 node_modules
 dist
 .env
-.txt
-.exe
+*.txt
+*.exe
+solana-release-*.tar.bz2
