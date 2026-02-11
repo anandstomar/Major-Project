@@ -17,17 +17,47 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
-      matrix:
-        service: 
-          - anchor-service
-          - anchoring-scheduler
-          - indexer
-          - ingest-service
-          - validator
-          - notification-service
-          - auditor-verifier
-          - query-service
-          - auth
+      matrix: 
+          include:
+          - service: anchor-service
+            folder: anchor-service
+            dockerfile: Dockerfile.go
+          - service: anchor-node-worker 
+            folder: anchor-service        
+            dockerfile: Dockerfile.node 
+          - service: anchoring-scheduler
+            folder: anchoring-scheduler 
+            dockerfile: Dockerfile
+          - service: indexer  
+            folder: indexer 
+            dockerfile: Dockerfile
+          - service: ingest-service
+            folder: ingest-service
+            dockerfile: Dockerfile
+          - service: validator
+            folder: validator
+            dockerfile: Dockerfile
+          - service: notification-service
+            folder: notification-service
+            dockerfile: Dockerfile  
+          - service: auditor-verifier
+            folder: auditor-verifier  
+            dockerfile: Dockerfile
+          - service: query-service
+            folder: query-service  
+            dockerfile: Dockerfile
+          - service: auth
+            folder: auth
+            dockerfile: Dockerfile
+          # - anchor-service
+          # - anchoring-scheduler
+          # - indexer
+          # - ingest-service
+          # - validator
+          # - notification-service
+          # - auditor-verifier
+          # - query-service
+          # - auth
 
     steps:
       - name: Checkout

@@ -1,0 +1,57 @@
+name: ML CI/CD
+
+on:
+  push:
+    paths:
+      - 'services/ml-serving/**'
+      - '.github/workflows/ml-deploy.yml'
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/ml-serving
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          pip install -r services/ml-serving/requirements.txt
+
+      - name: Run unit tests
+        run: |
+          pytest -q services/ml-serving/tests
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${REGISTRY}/${IMAGE_NAME}:${TAG} services/ml-serving
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        run: |
+          docker push ${REGISTRY}/${IMAGE_NAME}:${TAG}
+
+      - name: Update Argocd values (commit helm values)
+        run: |
+          # Update infra argocd values with the new tag so ArgoCD deploys it
+          yq eval ".image.tag = \"${TAG}\"" -i infra/argocd-apps/ml-serving/values.yaml
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add infra/argocd-apps/ml-serving/values.yaml
+          git commit -m "ci: deploy ml-serving ${TAG}" || echo "no changes"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
