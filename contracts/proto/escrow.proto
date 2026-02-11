@@ -1,0 +1,13 @@
+syntax = "proto3";
+package escrow;
+
+message EscrowEvent {
+  string escrow_id = 1;
+  string initializer = 2;
+  string beneficiary = 3;
+  string arbiter = 4;
+  uint64 amount = 5;
+  string tx_sig = 6;
+  string event_type = 7; // CREATED, DEPOSITED, RELEASED, CANCELLED
+  string timestamp = 8;
+}

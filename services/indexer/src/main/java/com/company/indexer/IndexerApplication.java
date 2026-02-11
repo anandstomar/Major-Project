@@ -9,7 +9,5 @@ public class IndexerApplication {
     public static void main(String[] args) {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         SpringApplication.run(IndexerApplication.class, args);
-    }
-
-    
+    }   
 }

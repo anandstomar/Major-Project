@@ -1,0 +1,14 @@
+# Dockerfile.mlflow
+FROM python:3.10-slim
+
+# Install MLflow and basic tools
+RUN pip install mlflow==2.6.0
+
+# Set working directory
+WORKDIR /mlflow
+
+# Expose the port
+EXPOSE 5000
+
+# Default entrypoint
+ENTRYPOINT ["mlflow"]

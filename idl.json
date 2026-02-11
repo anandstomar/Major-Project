@@ -1,0 +1,134 @@
+{
+    "version": "0.1.0",
+    "name": "anchor_program",
+    "instructions": [
+        {
+            "name": "initAnchor",
+            "accounts": [
+                {
+                    "name": "anchorAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "submitter",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "requestId",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "submitAnchor",
+            "accounts": [
+                {
+                    "name": "anchorAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "submitter",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "merkleRoot",
+                    "type": {
+                        "array": [
+                            "u8",
+                            32
+                        ]
+                    }
+                },
+                {
+                    "name": "eventsJson",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "accounts": [
+        {
+            "name": "AnchorAccount",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "requestId",
+                        "type": "string"
+                    },
+                    {
+                        "name": "merkleRoot",
+                        "type": {
+                            "array": [
+                                "u8",
+                                32
+                            ]
+                        }
+                    },
+                    {
+                        "name": "submitter",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "submittedAt",
+                        "type": "i64"
+                    },
+                    {
+                        "name": "events",
+                        "type": "string"
+                    }
+                ]
+            }
+        }
+    ],
+    "events": [
+        {
+            "name": "AnchorSubmitted",
+            "fields": [
+                {
+                    "name": "requestId",
+                    "type": "string",
+                    "index": false
+                },
+                {
+                    "name": "merkleRoot",
+                    "type": {
+                        "array": [
+                            "u8",
+                            32
+                        ]
+                    },
+                    "index": false
+                },
+                {
+                    "name": "submitter",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "submittedAt",
+                    "type": "i64",
+                    "index": false
+                }
+            ]
+        }
+    ]
+}

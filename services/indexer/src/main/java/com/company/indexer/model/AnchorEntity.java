@@ -34,7 +34,7 @@ public class AnchorEntity {
     @Column(name="submitter")
     private String submitter;
 
-        public Long getId() { return id; }
+    public Long getId() { return id; }
     public String getRequestId() { return requestId; }
     public void setRequestId(String requestId) { this.requestId = requestId; }
     public String getMerkleRoot() { return merkleRoot; }

@@ -223,6 +223,46 @@
       test: ["CMD", "solana", "gossip"]
       interval: 10s
       retries: 5
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    container_name: mlflow
+    # The command remains the same
+    command: server --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns --host 0.0.0.0 --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
+      - ./mlflow.db:/mlflow.db
+
+  ml-serving:
+    build: ./services/ml-serving/
+    container_name: ml-serving
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/models/model.pkl
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    # volumes:
+    #   - ./models:/app/models
+    depends_on:
+      - mlflow
+
+  # --- NEW SERVICE ADDED BELOW ---
+  spark-consumer:
+    image: analytics-spark-consumer:v1
+    container_name: spark-consumer
+    environment:
+      - KAFKA_BOOTSTRAP=kafka:29092
+      - S3A_ENDPOINT=http://minio:9000
+      - S3A_ACCESS_KEY=minioadmin
+      - S3A_SECRET_KEY=minioadmin
+    # This ensures it waits for the infra to be ready (if they are in this file)
+    depends_on:
+      - kafka
+      - minio
     
    
 

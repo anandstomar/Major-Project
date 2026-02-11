@@ -1,0 +1,9 @@
+[workspace]
+members = ["programs/escrow"]
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[programs.localnet]
+escrow = "9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo"

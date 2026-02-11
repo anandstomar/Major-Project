@@ -4,7 +4,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes; // Use ResourceAttributes
+import io.opentelemetry.semconv.ResourceAttributes; 
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
@@ -25,7 +25,6 @@ public class OpenTelemetryConfig {
             .setEndpoint("http://localhost:14250")
             .build();
 
-        // Use ResourceAttributes.SERVICE_NAME for compatibility with OTEL 1.32.0
         Resource resource = Resource.getDefault()
             .merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "indexer")));
 
