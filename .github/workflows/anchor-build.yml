@@ -17,8 +17,16 @@ jobs:
           toolchain: stable
       - name: Install Solana CLI
         run: |
-          curl -sSfL https://release.solana.com/v1.16.0/install/solana-install-init.sh | sh -s - v1.16.0
-          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+          # 1. Download installer with retries
+          curl -sSfL --retry 5 --retry-delay 2 --retry-connrefused https://release.solana.com/v1.16.0/install | sh
+
+          # 2. Add to GITHUB_PATH (for future steps)
+          echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          
+          # 3. Update CURRENT path (so we can check version right now)
+          export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
+          
+          # 4. Verify
           solana --version
       - name: Install Anchor (avm)
         run: |
