@@ -25,9 +25,13 @@ jobs:
         run: |
           pip install -r services/ml-serving/requirements.txt
 
+      # - name: Run unit tests
+      #   run: |
+      #     pytest -q services/ml-serving/tests
       - name: Run unit tests
+        working-directory: services/ml-serving   
         run: |
-          pytest -q services/ml-serving/tests
+          pytest -q tests
 
       - name: Build Docker image
         run: |
