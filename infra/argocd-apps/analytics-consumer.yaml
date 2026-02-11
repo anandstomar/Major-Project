@@ -8,6 +8,7 @@ spec:
   pythonVersion: "3"
   mode: cluster
   image: ghcr.io/anandstomar/major-project/spark-consumer:latest
+  sparkVersion: "3.5.0"
   mainApplicationFile: local:///app/app.py
 
   restartPolicy:
