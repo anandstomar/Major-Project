@@ -52,13 +52,13 @@ jobs:
 
       - name: Update Argocd values (commit helm values)
         run: |
-          # Update the tag in the Helm chart
-          yq eval ".image.tag = \"${TAG}\"" -i infra/helm-charts/ml-serving/values.yaml
-          
           git config user.email "ci@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
           git pull origin main --rebase
+
+          # Update the tag in the Helm chart
+          yq eval ".image.tag = \"${TAG}\"" -i infra/helm-charts/ml-serving/values.yaml
           
           git add infra/helm-charts/ml-serving/values.yaml
           
