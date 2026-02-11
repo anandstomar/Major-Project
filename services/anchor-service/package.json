@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc -p .",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "dev2": "ts-node src/init_anchor.ts",
+    "dev3": "ts-node src/submit_anchor.ts"
   },
   "dependencies": {
      "@project-serum/anchor": "^0.25.0",

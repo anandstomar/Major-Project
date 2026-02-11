@@ -30,6 +30,7 @@ export class SolanaClient {
       this.program.programId
     );
     try {
+      console.log("Checking if PDA exists:", pda.toBase58());
       await this.program.account.anchorAccount.fetch(pda);
       return pda;
     } catch {
