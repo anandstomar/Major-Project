@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "programs/anchor_program/**"
+      - ".github/workflows/anchor-build.yml"
 
 jobs:
   build-anchor:
