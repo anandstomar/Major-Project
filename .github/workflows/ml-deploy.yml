@@ -57,6 +57,8 @@ jobs:
           
           git config user.email "ci@users.noreply.github.com"
           git config user.name "github-actions[bot]"
+
+          git pull origin main --rebase
           
           git add infra/helm-charts/ml-serving/values.yaml
           
