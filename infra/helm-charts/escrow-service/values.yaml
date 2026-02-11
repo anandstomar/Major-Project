@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/anandstomar/major-project/escrow-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8095
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  SOLANA_RPC: "http://solana-rpc:8899"
+  ESCROW_PROGRAM_ID: "9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo"
+  ESCROW_IDL_PATH: "/app/programs/escrow-program/target/idl/escrow.json"
+  KAFKA_BOOTSTRAP: "kafka:29092"
+  KAFKA_ESCROW_TOPIC: "escrow.events"
+  WALLET_SECRET_NAME: "solana-wallet-secret"
+  WALLET_SECRET_KEY: "wallet.json"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

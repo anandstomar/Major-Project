@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "escrow-service.fullname" . | trunc 63 }}
+  labels:
+    app.kubernetes.io/name: {{ include "escrow-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "escrow-service.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "escrow-service.name" . }}
+    spec:
+      containers:
+        - name: escrow-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: SOLANA_RPC
+              value: "{{ .Values.env.SOLANA_RPC }}"
+            - name: ESCROW_PROGRAM_ID
+              value: "{{ .Values.env.ESCROW_PROGRAM_ID }}"
+            - name: ESCROW_IDL_PATH
+              value: "{{ .Values.env.ESCROW_IDL_PATH }}"
+            - name: KAFKA_BOOTSTRAP
+              value: "{{ .Values.env.KAFKA_BOOTSTRAP }}"
+            - name: KAFKA_ESCROW_TOPIC
+              value: "{{ .Values.env.KAFKA_ESCROW_TOPIC }}"
+            - name: WALLET_KEYPATH
+              value: "/etc/credentials/{{ .Values.env.WALLET_SECRET_KEY }}"
+          volumeMounts:
+            - name: wallet-secret
+              mountPath: /etc/credentials
+              readOnly: true
+          resources:
+            requests:
+              cpu: "{{ .Values.resources.requests.cpu }}"
+              memory: "{{ .Values.resources.requests.memory }}"
+            limits:
+              cpu: "{{ .Values.resources.limits.cpu }}"
+              memory: "{{ .Values.resources.limits.memory }}"
+      volumes:
+        - name: wallet-secret
+          secret:
+            secretName: {{ .Values.env.WALLET_SECRET_NAME }}
+            items:
+              - key: {{ .Values.env.WALLET_SECRET_KEY }}
+                path: {{ .Values.env.WALLET_SECRET_KEY }}

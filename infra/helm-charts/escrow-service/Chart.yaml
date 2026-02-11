@@ -1,0 +1,6 @@
+apiVersion: v2
+name: escrow-service
+description: Escrow microservice (solana anchor client + kafka producer)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
