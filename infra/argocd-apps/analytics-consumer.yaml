@@ -2,7 +2,7 @@ apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
   name: analytics-consumer
-  namespace: spark
+  namespace: spark-operator
 spec:
   type: Python
   pythonVersion: "3"
