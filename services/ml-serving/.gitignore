@@ -1,19 +1,52 @@
-give gitignore file for ml-serving project
-# Ignore Python bytecode files
+# --- Python Basics ---
 __pycache__/
-*.pyc
-*.pyo
-# Ignore virtual environment
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Virtual Env ---
 venv/
-# Ignore Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-# Ignore model files
+.env
+.venv
+env/
+ENV/
+
+# --- ML & Data (Important!) ---
+# Ignore datasets (too large for git)
+*.csv
+*.parquet
+data/
+connection_check.py
+# Ignore trained models (unless you specifically want to version small ones)
+*.pkl
+*.h5
+*.joblib
 models/
-# Ignore log files
-logs/
-# Ignore temporary files
-tmp/
-# Ignore IDE files
+model_artifacts/
+
+# --- MLflow ---
+mlruns/
+.trash/
+
+# --- IDEs ---
 .idea/
-# Ignore OS files
+.vscode/
+*.swp
 .DS_Store
