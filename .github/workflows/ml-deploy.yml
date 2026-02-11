@@ -46,11 +46,15 @@ jobs:
 
       - name: Update Argocd values (commit helm values)
         run: |
-          # Update infra argocd values with the new tag so ArgoCD deploys it
-          yq eval ".image.tag = \"${TAG}\"" -i infra/argocd-apps/ml-serving/values.yaml
+          # FIX: Point to the actual location of your Helm Chart values
+          yq eval ".image.tag = \"${TAG}\"" -i infra/helm-charts/ml-serving/values.yaml
+          
           git config user.email "ci@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add infra/argocd-apps/ml-serving/values.yaml
+          
+          # FIX: Add the correct file
+          git add infra/helm-charts/ml-serving/values.yaml
+          
           git commit -m "ci: deploy ml-serving ${TAG}" || echo "no changes"
           git push
         env:
