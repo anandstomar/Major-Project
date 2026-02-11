@@ -10,9 +10,9 @@ jobs:
   test-and-build:
     runs-on: ubuntu-latest
     env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}/ml-serving
+      REGISTRY: ghcr.io  
       TAG: ${{ github.sha }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,20 +21,22 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set Lowercase Image Name
+        run: |
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}/ml-serving" >> ${GITHUB_ENV}
+
       - name: Install deps
         run: |
           pip install -r services/ml-serving/requirements.txt
 
-      # - name: Run unit tests
-      #   run: |
-      #     pytest -q services/ml-serving/tests
       - name: Run unit tests
-        working-directory: services/ml-serving   
+        working-directory: services/ml-serving  
         run: |
           pytest -q tests
 
       - name: Build Docker image
         run: |
+          # Now ${REGISTRY} exists, so this becomes: ghcr.io/anandstomar/major-project/ml-serving:sha...
           docker build -t ${REGISTRY}/${IMAGE_NAME}:${TAG} services/ml-serving
 
       - name: Login to GHCR
@@ -50,13 +52,12 @@ jobs:
 
       - name: Update Argocd values (commit helm values)
         run: |
-          # FIX: Point to the actual location of your Helm Chart values
+          # Update the tag in the Helm chart
           yq eval ".image.tag = \"${TAG}\"" -i infra/helm-charts/ml-serving/values.yaml
           
           git config user.email "ci@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           
-          # FIX: Add the correct file
           git add infra/helm-charts/ml-serving/values.yaml
           
           git commit -m "ci: deploy ml-serving ${TAG}" || echo "no changes"
