@@ -19,6 +19,6 @@ spec:
           ports:
             - containerPort: 8080
           env:
-          {{- toYaml .Values.env | indent 10 }}
+          {{- toYaml .Values.env | indent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
