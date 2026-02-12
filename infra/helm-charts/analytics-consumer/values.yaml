@@ -1,0 +1,14 @@
+image:
+  repository: ghcr.io/anandstomar/major-project/spark-consumer
+  tag: latest
+  pullPolicy: Always
+
+spark:
+  version: "3.5.0"
+  driver:
+    cores: 1
+    memory: "512m"
+  executor:
+    instances: 1
+    cores: 1
+    memory: "512m"
