@@ -1,21 +1,23 @@
 name: ml-serving
 replicaCount: 1
-
 image:
   repository: ghcr.io/anandstomar/major-project/ml-serving
+<<<<<<< HEAD
   tag: ""
+=======
+  # FIX 1: Use 'latest' to get your newest code/model
+  tag: 77be7e09e9e088099bb43571272d6ebe0d4a403c
+  # FIX 2: Force Kubernetes to re-download the image
+>>>>>>> 12f93262c52df0db65940bcfa4400269b73350e9
   pullPolicy: Always
-
 service:
   type: ClusterIP
   port: 8080
-
 resources: {}
-
 env:
   # FIX 3: Explicitly set the URI to empty string (so it's not None)
   - name: MODEL_URI
-    value: "" 
+    value: ""
   - name: AWS_ACCESS_KEY_ID
     valueFrom:
       secretKeyRef:

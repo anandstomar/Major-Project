@@ -49,15 +49,6 @@ jobs:
           - service: auth
             folder: auth
             dockerfile: Dockerfile
-          # - anchor-service
-          # - anchoring-scheduler
-          # - indexer
-          # - ingest-service
-          # - validator
-          # - notification-service
-          # - auditor-verifier
-          # - query-service
-          # - auth
 
     steps:
       - name: Checkout
