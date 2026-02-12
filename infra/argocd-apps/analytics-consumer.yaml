@@ -1,45 +1,70 @@
-apiVersion: sparkoperator.k8s.io/v1beta2
-kind: SparkApplication
+apiVersion: argoproj.io/v1alpha1
+kind: Application
 metadata:
   name: analytics-consumer
-  namespace: spark-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  type: Python
-  pythonVersion: "3"
-  mode: cluster
-  image: ghcr.io/anandstomar/major-project/spark-consumer:latest
-  sparkVersion: "3.5.0"
-  mainApplicationFile: local:///app/app.py
+  project: default
+  source:
+    repoURL: https://github.com/anandstomar/Major-Project.git
+    targetRevision: HEAD
+    path: infra/helm-charts/analytics-consumer
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
 
-  restartPolicy:
-    type: OnFailure
-    onFailureRetries: 3
-    onFailureRetryInterval: 10
-    onSubmissionFailureRetries: 5
-    onSubmissionFailureRetryInterval: 20
 
-  # Driver Config
-  driver:
-    cores: 1
-    coreLimit: "1200m"
-    memory: "512m"
-    labels:
-      version: 3.5.0
-    serviceAccount: spark-operator-spark  # Ensure this SA exists!
 
-  # Executor Config
-  executor:
-    cores: 1
-    instances: 1
-    memory: "512m"
-    labels:
-      version: 3.5.0
 
-  sparkConf:
-    "spark.hadoop.fs.s3a.endpoint": "http://minio:9000"
-    "spark.hadoop.fs.s3a.access.key": "minioadmin"
-    "spark.hadoop.fs.s3a.secret.key": "minioadmin"
-    "spark.hadoop.fs.s3a.path.style.access": "true"
-    "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"
-    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
-    "spark.jars.packages": "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4"
+
+# apiVersion: sparkoperator.k8s.io/v1beta2
+# kind: SparkApplication
+# metadata:
+#   name: analytics-consumer
+#   namespace: spark-operator
+# spec:
+#   type: Python
+#   pythonVersion: "3"
+#   mode: cluster
+#   image: ghcr.io/anandstomar/major-project/spark-consumer:latest
+#   sparkVersion: "3.5.0"
+#   mainApplicationFile: local:///app/app.py
+
+#   restartPolicy:
+#     type: OnFailure
+#     onFailureRetries: 3
+#     onFailureRetryInterval: 10
+#     onSubmissionFailureRetries: 5
+#     onSubmissionFailureRetryInterval: 20
+
+#   # Driver Config
+#   driver:
+#     cores: 1
+#     coreLimit: "1200m"
+#     memory: "512m"
+#     labels:
+#       version: 3.5.0
+#     serviceAccount: spark-operator-spark  # Ensure this SA exists!
+
+#   # Executor Config
+#   executor:
+#     cores: 1
+#     instances: 1
+#     memory: "512m"
+#     labels:
+#       version: 3.5.0
+
+#   sparkConf:
+#     "spark.hadoop.fs.s3a.endpoint": "http://minio:9000"
+#     "spark.hadoop.fs.s3a.access.key": "minioadmin"
+#     "spark.hadoop.fs.s3a.secret.key": "minioadmin"
+#     "spark.hadoop.fs.s3a.path.style.access": "true"
+#     "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"
+#     "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+#     "spark.jars.packages": "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4"
