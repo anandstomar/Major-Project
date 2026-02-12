@@ -3,9 +3,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/anandstomar/major-project/ml-serving
-  # FIX 1: Use 'latest' to get your newest code/model
-  tag: latest
-  # FIX 2: Force Kubernetes to re-download the image
+  tag: ""
   pullPolicy: Always
 
 service:
