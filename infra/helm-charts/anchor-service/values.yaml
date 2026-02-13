@@ -23,7 +23,7 @@ env:
   - name: MINIO_PORT
     value: "9000"
   - name: ANCHOR_SUBMITTER_ADDR
-    value: "192.168.1.6:50051"
+    value: "anchor-service:50051"
   - name: KAFKA_BROKERS
     value: kafka-external:9092
 metrics:
