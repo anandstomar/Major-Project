@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: substrate-node
@@ -22,8 +24,6 @@ spec:
         prometheus.io/port: {{ index .Values.prometheus.annotations "prometheus.io/port" | quote }}
         {{- end }}
     spec:
-      strategy:
-        type: Recreate
       # This block MUST be here to grant permission to the /data volume
       securityContext:
         runAsUser: 1000
