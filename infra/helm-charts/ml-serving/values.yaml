@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/anandstomar/major-project/ml-serving
   # Use the specific commit tag you wanted
-  tag: "77be7e09e9e088099bb43571272d6ebe0d4a403c"
+  tag: "9c988b9c7140a956823d12dd50fc01138755ff63"
   pullPolicy: Always
 service:
   type: ClusterIP
