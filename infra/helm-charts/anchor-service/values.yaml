@@ -3,7 +3,7 @@ imagePullSecrets:
   - name: ghcrpat
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service
-  tag: "0d0b33e4b839b418c849f8e40185a91c2743e549"
+  tag: "469a63741bbac3bf2f7c0b973962165f90cf549d"
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -20,7 +20,7 @@ resources:
 env:
   - name: MINIO_ENDPOINT
     value: "minio"
-  - name: MINIO_PORT       
+  - name: MINIO_PORT
     value: "9000"
   - name: ANCHOR_SUBMITTER_ADDR
     value: "192.168.1.6:50051"
