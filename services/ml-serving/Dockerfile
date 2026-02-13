@@ -9,8 +9,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ /app/app
-RUN mkdir -p /app/models
-COPY model.pkl /app/models/model.pkl  
+# RUN mkdir -p /app/models
+COPY model.pkl /app/model.pkl  
 COPY start_server.sh /app/start_server.sh
 RUN chmod +x /app/start_server.sh
 
