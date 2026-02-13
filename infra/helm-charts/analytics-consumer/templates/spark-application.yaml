@@ -9,6 +9,8 @@ spec:
   mode: cluster
   image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
   imagePullPolicy: {{ .Values.image.pullPolicy }}
+  imagePullSecrets:
+    - name: ghcrpat
   sparkVersion: "{{ .Values.spark.version }}"
   mainApplicationFile: local:///app/app.py
   restartPolicy:
