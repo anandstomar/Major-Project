@@ -20,6 +20,8 @@ resources:
 env:
   - name: MINIO_ENDPOINT
     value: "minio"
+  - name: MINIO_PORT       
+    value: "9000"
   - name: ANCHOR_SUBMITTER_ADDR
     value: "192.168.1.6:50051"
   - name: KAFKA_BROKERS
