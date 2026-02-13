@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/spark-consumer
-  tag: ""
+  tag: "latest"
   pullPolicy: Always
 
 spark:
