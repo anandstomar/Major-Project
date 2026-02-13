@@ -8,13 +8,21 @@ service:
 imagePullSecrets:
   - name: ghcrpat
 env:
-  # 1. Database Configuration (Use your Host IP)
-  - name: SPRING_DATASOURCE_URL
-    value: "jdbc:postgresql://postgresql.default.svc.cluster.local:5432/indexer_db"
-  - name: SPRING_DATASOURCE_USERNAME
+  - name: DB_HOST
+    value: "postgresql"
+  - name: DB_USER
     value: "indexer"
-  - name: SPRING_DATASOURCE_PASSWORD
+  - name: DB_PASS
     value: "indexerpwd"
+  - name: DB_NAME
+    value: "indexer"
+  # # 1. Database Configuration (Use your Host IP)
+  # - name: SPRING_DATASOURCE_URL
+  #   value: "jdbc:postgresql://postgresql.default.svc.cluster.local:5432/indexer_db"
+  # - name: SPRING_DATASOURCE_USERNAME
+  #   value: "indexer"
+  # - name: SPRING_DATASOURCE_PASSWORD
+  #   value: "indexerpwd"
   # 2. Kafka Configuration (Use the new port 9094)
   - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
     value: "kafka-external:9092"
