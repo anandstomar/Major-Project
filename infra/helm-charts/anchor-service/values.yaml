@@ -3,7 +3,7 @@ imagePullSecrets:
   - name: ghcrpat
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service
-  tag: "7a0139694545c9ab769586ccc01460b05d82f10e"
+  tag: "f7fb2451c5c126ff9b3d3d89f47bac036de579ea"
   pullPolicy: Always
 service:
   type: ClusterIP
