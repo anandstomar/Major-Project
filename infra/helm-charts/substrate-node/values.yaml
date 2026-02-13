@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   # repository: parity/substrate
-  repository: parity/substrate-contracts-node
+  repository: docker.io/parity/substrate-contracts-node:latest
   tag: "latest" 
   pullPolicy: IfNotPresent
 
