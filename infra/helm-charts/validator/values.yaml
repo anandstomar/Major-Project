@@ -16,5 +16,3 @@ env:
     value: "validator"
   - name: MINIO_PORT
     value: "9000"
-  - name: GRPC_SERVER_PORT
-    value: "9090"
