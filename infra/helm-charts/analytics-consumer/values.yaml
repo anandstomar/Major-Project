@@ -4,7 +4,7 @@ image:
   pullPolicy: Always
 
 spark:
-  version: "3.5.0"
+  version: "3.5.1"
   driver:
     cores: 1
     memory: "512m"
