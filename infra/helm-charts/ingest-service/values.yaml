@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/ingest-service
-  tag: ecd1355f0597cf7f1b66cd472524292d7fda8742
+  tag: 6a6c28c7163801ad30d20eb39d9c4b357b030960
   pullPolicy: Always
 service:
   type: ClusterIP
