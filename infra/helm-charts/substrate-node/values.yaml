@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   # repository: parity/substrate
-  repository: docker.io/parity/substrate-contracts-node
+  repository: docker.io/parity/substrate
   tag: "latest" 
   pullPolicy: IfNotPresent
 
@@ -11,7 +11,7 @@ node:
   chainSpecConfigMap: "substrate-chainspec"
   args:
     - "--dev"
-    - "--sealing=instant"
+    # - "--sealing=instant"
     - "--rpc-external"
     - "--rpc-methods=Unsafe"
     - "--rpc-cors=all"
