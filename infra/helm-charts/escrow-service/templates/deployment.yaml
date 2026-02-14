@@ -6,6 +6,8 @@ metadata:
     app.kubernetes.io/name: {{ include "escrow-service.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  imagePullSecrets:
+        - name: ghcr-secret
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
