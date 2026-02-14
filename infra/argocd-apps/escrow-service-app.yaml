@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/anandstomar/Major-Project.git
     targetRevision: HEAD
-    path: services/escrow-service/k8s
+    path:  infra/helm-charts/escrow-service
   destination:
     server: https://kubernetes.default.svc
     namespace: default
