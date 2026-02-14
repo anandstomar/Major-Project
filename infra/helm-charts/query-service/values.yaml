@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/query-service
-  tag: a2264dd212ffe253a8981b2af125a3ae57cdf64f
+  tag: 878e914573aca041ea005193b55a9e42507f9763
   pullPolicy: Always
 service:
   type: ClusterIP
