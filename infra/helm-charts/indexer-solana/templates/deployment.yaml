@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solana-listener
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: solana-listener
+  template:
+    metadata:
+      labels:
+        app: solana-listener
+    spec:
+      containers:
+        - name: solana-listener
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: SOLANA_HTTP_RPC
+              value: "{{ .Values.env.SOLANA_HTTP_RPC }}"
+            - name: SOLANA_PROGRAM_ID
+              value: "{{ .Values.env.SOLANA_PROGRAM_ID }}"
+            - name: KAFKA_BROKERS
+              value: "{{ .Values.env.KAFKA_BROKERS }}"
+            - name: KAFKA_TOPIC
+              value: "{{ .Values.env.KAFKA_TOPIC }}"

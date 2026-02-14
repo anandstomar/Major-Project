@@ -264,6 +264,40 @@
       - kafka
       - minio
     
+  anchor-service-solana:
+    container_name: anchor-service-solana
+    build:
+      context: ./services/anchor-service
+      dockerfile: Dockerfile.node
+    environment:
+      - SOLANA_RPC=http://solana:8899
+      - SOLANA_PROGRAM_ID=Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq
+      - SOLANA_FEE_PAYER_PATH=/app/dev-fee-payer.json.json
+      - SOLANA_IDL_PATH=/app/idl/anchor_program.json
+    volumes:
+      - ./services/anchor-service/dev-fee-payer.json:/app/dev-fee-payer.json.json:ro
+      - ./services/anchor-service/src/anchor_program.json:/app/idl/anchor_program.json:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - solana
+
+  indexer-solana:
+    container_name: indexer-solana
+    build:
+      context: ./services/indexer/solana-listener
+      dockerfile: Dockerfile.node
+    environment:
+      - SOLANA_HTTP_RPC=http://solana:8899
+      - SOLANA_PROGRAM_ID=Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPIC=anchors.completed
+    depends_on:
+      # - solana
+      - kafka
+
+  
+    
    
 
  volumes:

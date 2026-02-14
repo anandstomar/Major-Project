@@ -1,0 +1,14 @@
+image:
+  repository: ghcr.io/anandstomar/major-project/anchor-service
+  tag: latest
+
+replicaCount: 1
+
+service:
+  port: 3000
+
+env:
+  SOLANA_RPC: "http://solana:8899"
+  SOLANA_PROGRAM_ID: "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
+  SOLANA_IDL_CONFIGMAP: "anchor-program-idl"   # name of configmap containing idl.json
+  SOLANA_FEE_PAYER_SECRET: "anchor-fee-payer"   # k8s secret name containing fee payer key

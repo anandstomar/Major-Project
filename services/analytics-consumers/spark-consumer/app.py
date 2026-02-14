@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("spark-consumer")
 
 # Environment (with sensible defaults)
-KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "kafka:29092")
+KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "kafka-external.default.svc.cluster.local:9094")
 KAFKA_TOPIC = os.environ.get("KAFKA_TOPIC", "anchors.completed")
 KAFKA_OUT_TOPIC = os.environ.get("KAFKA_OUT_TOPIC", "analytics.anchors.hourly")
 CHECKPOINT_BASE = os.environ.get("CHECKPOINT_BASE", "/tmp/checkpoints/analytics")

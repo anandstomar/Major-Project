@@ -13,7 +13,7 @@ const PROGRAM_ID = process.env.SOLANA_PROGRAM_ID || 'Fb7znUeRhH1pHHRd5cNtwTxFqL9
 const KAFKA_BROKERS = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
 const KAFKA_TOPIC = process.env.KAFKA_TOPIC || 'anchors.completed';
 // We need to point to the IDL just like in the client
-const IDL_PATH = process.env.SOLANA_IDL_PATH || path.resolve(__dirname, '../../../../programs/anchor_program/target/idl/anchor_program.json');
+const IDL_PATH = process.env.SOLANA_IDL_PATH || path.resolve(__dirname, 'anchor_program.json');
 
 const kafka = new Kafka({ brokers: KAFKA_BROKERS });
 const producer = kafka.producer();

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: anchor-service
+  name: anchor-service-solana
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/anandstomar/Major-Project.git
     targetRevision: main
-    path: infra/helm-charts/anchor-service
+    path: infra/helm-charts/anchor-service-solana
   destination:
     server: https://kubernetes.default.svc
     namespace: default

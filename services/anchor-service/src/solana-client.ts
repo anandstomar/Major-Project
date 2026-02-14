@@ -7,7 +7,7 @@ const RPC = process.env.SOLANA_RPC || 'http://localhost:8899';
 const PROGRAM_ID = process.env.SOLANA_PROGRAM_ID || 'Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq';
 if (!PROGRAM_ID) throw new Error('SOLANA_PROGRAM_ID environment variable is required');
 const KEYPAIR_PATH = process.env.SOLANA_FEE_PAYER_PATH || 'dev-fee-payer.json';
-const IDL_PATH = process.env.SOLANA_IDL_PATH || path.resolve(__dirname, '../../../programs/anchor_program/target/idl/anchor_program.json');
+const IDL_PATH = process.env.SOLANA_IDL_PATH || path.resolve(__dirname, 'anchor_program.json');
 
 export class SolanaClient {
   provider: anchor.AnchorProvider;

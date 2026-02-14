@@ -1,0 +1,11 @@
+image:
+  repository: ghcr.io/anandstomar/major-project/indexer-solana
+  tag: latest
+
+replicaCount: 1
+
+env:
+  SOLANA_HTTP_RPC: "http://solana:8899"
+  SOLANA_PROGRAM_ID: "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
+  KAFKA_BROKERS: "kafka:29092"
+  KAFKA_TOPIC: "anchors.completed"

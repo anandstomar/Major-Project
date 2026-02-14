@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anchor-service
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: anchor-service
+  template:
+    metadata:
+      labels:
+        app: anchor-service
+    spec:
+      containers:
+        - name: anchor-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: SOLANA_RPC
+              value: "{{ .Values.env.SOLANA_RPC }}"
+            - name: SOLANA_PROGRAM_ID
+              value: "{{ .Values.env.SOLANA_PROGRAM_ID }}"
+            - name: SOLANA_IDL_PATH
+              value: "/var/idl/anchor_program.json"
+            - name: SOLANA_FEE_PAYER_PATH
+              value: "/keys/fee-payer.json"
+          volumeMounts:
+            - name: idl
+              mountPath: /var/idl
+            - name: fee-payer
+              mountPath: /keys
+      volumes:
+        - name: idl
+          configMap:
+            name: {{ .Values.env.SOLANA_IDL_CONFIGMAP }}
+        - name: fee-payer
+          secret:
+            secretName: {{ .Values.env.SOLANA_FEE_PAYER_SECRET }}

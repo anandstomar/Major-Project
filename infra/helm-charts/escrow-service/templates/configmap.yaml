@@ -3,5 +3,4 @@ kind: ConfigMap
 metadata:
   name: {{ include "escrow-service.fullname" . }}-config
 data:
-  # optional runtime config
   ESCROW_SERVICE_LOG_LEVEL: "info"

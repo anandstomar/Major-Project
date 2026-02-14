@@ -20,21 +20,3 @@ spec:
       selfHeal: true
 
 
-
-
-
-# # ArgoCD / CD pipeline controlled values for escrow-service
-# image:
-#   repository: ghcr.io/anandstomar/major-project/escrow-service
-#   tag: latest          
-
-# replicaCount: 1
-
-# env:
-#   SOLANA_RPC: "http://solana-rpc.default.svc.cluster.local:8899"
-#   ESCROW_PROGRAM_ID: "9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo"
-#   ESCROW_IDL_PATH: "/app/programs/escrow-program/target/idl/escrow.json"
-#   KAFKA_BOOTSTRAP: "kafka.default.svc.cluster.local:29092"
-#   KAFKA_ESCROW_TOPIC: "escrow.events"
-#   WALLET_SECRET_NAME: "solana-wallet-secret"
-#   WALLET_SECRET_KEY: "wallet.json"

@@ -1,9 +1,42 @@
-FROM node:20-alpine
+# Node image with build deps
+FROM node:20-alpine AS build
 WORKDIR /app
-COPY tsconfig.json /tsconfig.base.json
+# install build deps
 COPY package.json package-lock.json* tsconfig.json ./
-RUN npm ci
+RUN npm ci --production=false
 COPY src ./src
-RUN npm run build 
+# If you need to copy the IDL at build time (optional)
+# COPY ../../programs/anchor_program/target/idl/ ./idl
+# RUN cp src/idl/anchor_program.json dist/idl/anchor_program.json
+# RUN cp src/dev-fee-payer.json dist/idl/dev-fee-payer.json
+RUN npm run build
+
+# runtime image
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+
+# COPY --from=build /app/package.json /app/package-lock.json* /app/dist ./ 
+
+COPY --from=build /app/package.json /app/package-lock.json* ./
+COPY --from=build /app/dist ./dist
+RUN npm ci --production
+# make optional keys folder for mounted fee payer
+RUN mkdir -p /keys
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
+
+
+
+
+
+
+# FROM node:20-alpine
+# WORKDIR /app
+# COPY tsconfig.json /tsconfig.base.json
+# COPY package.json package-lock.json* tsconfig.json ./
+# RUN npm ci
+# COPY src ./src
+# RUN npm run build 
+# EXPOSE 3000
+# CMD ["node", "dist/index.js"]

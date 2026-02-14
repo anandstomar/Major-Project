@@ -3,7 +3,7 @@ import * as anchor from "@project-serum/anchor";
 import fs from "fs";
 import path from "path";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import idl from "./idl/anchor_program.json";
+import idl from "./anchor_program.json";
 
 const PROGRAM_ID = new PublicKey("4wa3xzTQK88UeEKBNoN1NxEU6dTjak6qYR8N7VDdLyz3");
 const RPC = "https://api.devnet.solana.com";

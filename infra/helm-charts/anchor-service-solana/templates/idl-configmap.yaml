@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anchor-program-idl
+data:
+  anchor_program.json: |-
+{{ .Files.Get "files/anchor_program.json" | indent 4 }}

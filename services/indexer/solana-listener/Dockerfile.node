@@ -1,7 +1,27 @@
-FROM node:20-alpine
+# --- Build Stage ---
+FROM node:20-alpine AS build
 WORKDIR /app
+
+# Install ALL dependencies (including devDependencies like TypeScript)
 COPY package.json package-lock.json* tsconfig.json ./
-RUN npm ci --production
+RUN npm ci
+
+# Copy the source code and compile it
 COPY src ./src
 RUN npm run build
+RUN cp src/anchor_program.json dist/anchor_program.json
+
+# --- Runtime Stage ---
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Only install production dependencies to keep the image small and secure
+COPY package.json package-lock.json* ./
+RUN npm ci --production
+
+# Copy ONLY the compiled javascript from the build stage
+COPY --from=build /app/dist ./dist
+
+# Start the listener to push completed anchors to Kafka
 CMD ["node", "dist/solana-listener.js"]

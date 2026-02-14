@@ -18,6 +18,8 @@ WORKDIR /app
 COPY app.py /app/
 COPY entrypoint.sh /app/entrypoint.sh
 
+RUN sed -i 's/\r$//' /app/entrypoint.sh
+
 # Make the entrypoint executable
 RUN chmod +x /app/entrypoint.sh
 
