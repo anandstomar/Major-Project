@@ -1,10 +1,11 @@
 image:
-  repository: docker.io/anandst123/anchor-service-solana:latest .
+  repository: ghcr.io/anandstomar/major-project/anchor-service-solana
   tag: latest
 imagePullSecrets:
   - name: ghcrpat
 replicaCount: 1
 service:
+  type: ClusterIP
   port: 3000
 env:
   SOLANA_RPC: "http://solana:8899"

@@ -18,7 +18,9 @@ spec:
         - name: anchor-service
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
           env:
             - name: SOLANA_RPC
               value: "{{ .Values.env.SOLANA_RPC }}"
