@@ -1,12 +1,11 @@
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service-solana
   tag: latest
-
+imagePullSecrets:
+  - name: ghcrpat
 replicaCount: 1
-
 service:
   port: 3000
-
 env:
   SOLANA_RPC: "http://solana:8899"
   SOLANA_PROGRAM_ID: "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
