@@ -4,7 +4,7 @@ import path from "path";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
-const IDL_PATH = process.env.ESCROW_IDL_PATH || path.join(__dirname, "../../../../programs/escrow-program/target/idl/escrow.json");
+const IDL_PATH = process.env.ESCROW_IDL_PATH || path.join(__dirname, "./escrow.json");
 const PROGRAM_ID = new PublicKey("9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo");
 
 function loadKeypairFromFile(p: string): Keypair {
