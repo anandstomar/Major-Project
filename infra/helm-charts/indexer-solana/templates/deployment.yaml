@@ -15,6 +15,9 @@ spec:
       containers:
         - name: solana-listener
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 3000
           env:
             - name: SOLANA_HTTP_RPC
               value: "{{ .Values.env.SOLANA_HTTP_RPC }}"

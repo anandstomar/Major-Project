@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: anchor-service
+  name: anchor-service-solana
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: anchor-service
+      app: anchor-service-solana
   template:
     metadata:
       labels:
-        app: anchor-service
+        app: anchor-service-solana
     spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       containers:
-        - name: anchor-service
+        - name: anchor-service-solana
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - name: http
