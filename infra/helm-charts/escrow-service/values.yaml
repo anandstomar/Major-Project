@@ -20,7 +20,7 @@ resources:
 env:
   SOLANA_RPC: "http://solana-rpc:8899"
   ESCROW_PROGRAM_ID: "9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo"
-  ESCROW_IDL_PATH: "/app/programs/escrow-program/target/idl/escrow.json"
+  # ESCROW_IDL_PATH: "/app/programs/escrow-program/target/idl/escrow.json"
   KAFKA_BOOTSTRAP: "kafka-external.default.svc.cluster.local:9094"
   KAFKA_ESCROW_TOPIC: "escrow.events"
   WALLET_SECRET_NAME: "solana-wallet-secret"
