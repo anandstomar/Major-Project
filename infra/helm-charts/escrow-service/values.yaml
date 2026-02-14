@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/anandstomar/major-project/escrow-service
-  tag: ""
+  tag: "latest"
   pullPolicy: Always
 
 service:
