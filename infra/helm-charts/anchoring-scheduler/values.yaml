@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/anchoring-scheduler
-  tag: f58856e19441e03155378d5849fd73a363ca740a
+  tag: e396ba9bc7d78a1e2a4b93d31c210ce109742abc
   pullPolicy: Always
 service:
   type: ClusterIP
