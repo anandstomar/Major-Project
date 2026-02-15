@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: major-project-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "5"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+spec:
+  ingressClassName: nginx # <--- Moved here!
+  rules:
+    - http:
+        paths:
+          # 1. Route Auth traffic to your NestJS app
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth # Ensure your service is actually named 'auth' in k8s!
+                port:
+                  number: 80
+          # 2. Route Solana Anchor traffic
+          - path: /api/v1/anchors
+            pathType: Prefix
+            backend:
+              service:
+                name: anchor-service
+                port:
+                  number: 3000
+          # 3. Route Frontend (Fallback)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80

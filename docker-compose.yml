@@ -200,7 +200,35 @@
       # - auditor-verifier
       - ingest-service
       - query-service
+
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev --http-port 8080
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_LOG_LEVEL: INFO
+    ports:
+      - "8092:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   
+  auth-service:
+    build: .
+    ports:
+      - "8090:8090"
+    environment:
+      - KEYCLOAK_ISSUER=http://keycloak:8080/realms/provenance
+      - KEYCLOAK_AUDIENCE=provenance-api
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=provenance
+    depends_on:
+      keycloak:
+        condition: service_healthy
   
 
   solana:

@@ -15,7 +15,7 @@ export class JwtAuthStrategy extends PassportStrategy(JwtStrategy, 'jwt') {
     const issuer = config.get<string>('KEYCLOAK_ISSUER') || `${keycloakUrl}/realms/${realm}`;
     const jwksUri = config.get<string>('KEYCLOAK_JWKS') || `${issuer}/protocol/openid-connect/certs`;
     // audience: optional. If you see audience problems, leave undefined or set to the token's aud/azp
-    const audience = config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
+    // const audience = config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
 
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -27,7 +27,7 @@ export class JwtAuthStrategy extends PassportStrategy(JwtStrategy, 'jwt') {
         jwksUri,
       }),
       issuer,
-      audience,
+      // audience,
       algorithms: ['RS256'],
     };
 

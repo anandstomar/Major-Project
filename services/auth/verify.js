@@ -2,6 +2,10 @@
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const token = process.env.TOKEN;
+if (!token) {
+  console.error("Error: TOKEN environment variable is not set.");
+  process.exit(1);
+}
 const client = jwksClient({ jwksUri: 'http://localhost:8092/realms/provenance/protocol/openid-connect/certs' });
 const header = JSON.parse(Buffer.from(token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'), 'base64').toString());
 client.getSigningKey(header.kid, (err, key) => {
