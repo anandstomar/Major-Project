@@ -23,13 +23,6 @@ spec:
                 name: auth # Ensure your service is actually named 'auth' in k8s!
                 port:
                   number: 8090
-          - path: /auth-server
-            pathType: Prefix
-            backend:
-              service:
-                name: keycloak
-                port:
-                  number: 80
           # 2. Route Solana Anchor traffic
           - path: /api/v1/anchors
             pathType: Prefix

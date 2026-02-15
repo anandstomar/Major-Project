@@ -8,6 +8,7 @@ service:
 imagePullSecrets:
   - name: ghcrpat
 env:
+  env:
   - name: KAFKA_BROKERS
     value: "kafka-external:9092"
   - name: KEYCLOAK_ISSUER
