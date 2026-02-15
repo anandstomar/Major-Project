@@ -11,6 +11,7 @@ env:
   - name: KAFKA_BROKERS
     value: "kafka-external:9092"
   - name: KEYCLOAK_ISSUER
+    value: "http://92.4.78.222/auth-server/realms/provenance"
   - name: KEYCLOAK_JWKS_URI  
     value: "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs"
   - name: KEYCLOAK_URL
