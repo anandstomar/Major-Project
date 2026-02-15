@@ -13,6 +13,6 @@ env:
   - name: KEYCLOAK_ISSUER
     value: "http://92.4.78.222/auth-server/realms/provenance"
   - name: KEYCLOAK_JWKS_URI  
-    value: "http://keycloak.default.svc.cluster.local/auth-server/realms/provenance/protocol/openid-connect/certs"
+    value: "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs"
   - name: KEYCLOAK_URL
     value: "http://92.4.78.222/auth-server"
