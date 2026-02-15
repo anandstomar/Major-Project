@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/auth
-  tag: 9139c5f6ccf65307bb229379f15309490f8abecd
+  tag: b7934eb164bd7d81804e6a4e87082c6d0528c224
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -11,7 +11,6 @@ env:
   - name: KAFKA_BROKERS
     value: "kafka-external:9092"
   - name: KEYCLOAK_ISSUER
-    value: "http://92.4.78.222/auth-server/realms/provenance"
   - name: KEYCLOAK_JWKS_URI  
     value: "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs"
   - name: KEYCLOAK_URL
