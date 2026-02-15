@@ -10,7 +10,7 @@ export class JwtAuthStrategy extends PassportStrategy(JwtStrategy, 'jwt') {
   private readonly logger = new Logger(JwtAuthStrategy.name);
 
   constructor(private readonly config: ConfigService) {
-    const keycloakUrl = config.get<string>('KEYCLOAK_URL') || 'http://keycloak.default.svc.cluster.local:80';
+    const keycloakUrl = config.get<string>('KEYCLOAK_URL') || 'http://keycloak.default.svc.cluster.local';
     const realm = config.get<string>('KEYCLOAK_REALM') || 'provenance';
     const issuer = config.get<string>('KEYCLOAK_ISSUER') || `${keycloakUrl}/realms/${realm}`;
     const jwksUri = config.get<string>('KEYCLOAK_JWKS') || `${issuer}/protocol/openid-connect/certs`;
