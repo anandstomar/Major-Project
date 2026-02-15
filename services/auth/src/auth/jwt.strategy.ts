@@ -10,12 +10,14 @@ export class JwtAuthStrategy extends PassportStrategy(JwtStrategy, 'jwt') {
   private readonly logger = new Logger(JwtAuthStrategy.name);
 
   constructor(private readonly config: ConfigService) {
-    const keycloakUrl = config.get<string>('KEYCLOAK_URL') || 'http://92.4.78.222/auth-server';
-    const realm = config.get<string>('KEYCLOAK_REALM') || 'provenance';
-    const issuer = config.get<string>('KEYCLOAK_ISSUER') || `${keycloakUrl}/realms/${realm}`;
-    const jwksUri = config.get<string>('KEYCLOAK_JWKS') || "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs";
+    // const keycloakUrl = 'http://92.4.78.222/auth-server';
+    // const realm = 'provenance';
+    const issuer = 'http://92.4.78.222/auth-server/realms/provenance';
+    const jwksUri = "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs";
     // audience: optional. If you see audience problems, leave undefined or set to the token's aud/azp
-    const audience = config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
+   // const audience = config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
+
+   console.log(`Initialising JWT Strategy with JWKS URI: ${jwksUri}`);
 
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
