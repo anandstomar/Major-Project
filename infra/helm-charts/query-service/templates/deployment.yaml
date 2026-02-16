@@ -24,8 +24,5 @@ spec:
             {{- toYaml .Values.env | nindent 12 }}
           ports:
             - name: http
-              port: {{ .Values.service.port }}    
-              targetPort: {{ .Values.service.port }} 
-            # - name: http
-            #   containerPort: {{ .Values.service.port }}
-            #   protocol: TCP
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
