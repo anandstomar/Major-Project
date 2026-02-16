@@ -1,13 +1,19 @@
-// src/auth/auth.controller.ts
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
-//import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from './roles.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Roles } from './roles.decorator';
+import { AuthService } from './auth.service';
 
-@Controller('auth')               // combined with global prefix 'api/v1' => /api/v1/auth
+@Controller('auth') // combined with global prefix 'api/v1' => /api/v1/auth
 export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('register')
+  async register(@Body() body: any) {
+    return this.authService.registerUser(body);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@Req() req: ExpressRequest) {
@@ -15,7 +21,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('manage-account')   // choose a role that exists in token
+  @Roles('manage-account') 
   @Get('admin')
   admin(@Req() req: ExpressRequest) {
     return { ok: true, user: req.user };

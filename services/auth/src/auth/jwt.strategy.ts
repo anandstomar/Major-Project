@@ -17,7 +17,6 @@ export class JwtAuthStrategy extends PassportStrategy(JwtStrategy, 'jwt') {
     // audience: optional. If you see audience problems, leave undefined or set to the token's aud/azp
    // const audience = config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
 
-   console.log(`Initialising JWT Strategy with JWKS URI: ${jwksUri}`);
 
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

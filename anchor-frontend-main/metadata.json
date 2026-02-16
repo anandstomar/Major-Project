@@ -1,0 +1,5 @@
+{
+  "name": "Anchor Enterprise Console",
+  "description": "A polished, enterprise-grade monorepo management console featuring anchor management, ingestion pipelines, validator workflows, and AI-powered insights.",
+  "requestFramePermissions": []
+}
