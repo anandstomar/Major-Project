@@ -14,3 +14,13 @@ env:
     value: "ingest-service"
   - name: MINIO_ENDPOINT
     value: "minio"
+  - name: MINIO_PORT
+    value: "9000"
+  - name: MINIO_USE_SSL
+    value: "false"
+  - name: MINIO_ACCESS_KEY
+    value: "minioadmin"
+  - name: MINIO_SECRET_KEY
+    value: "minioadmin"
+  - name: IPFS_API_URL
+    value: "http://ipfs:5001"

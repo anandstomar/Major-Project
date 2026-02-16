@@ -59,6 +59,7 @@ const ipfs = createIpfsClient({
 const kafka = new Kafka({
   clientId: process.env.KAFKA_CLIENT_ID || "ingest-service",
   brokers: (process.env.KAFKA_BROKERS || "kafka-external:9092").split(","),
+  connectionTimeout: 3000,
 });
 
 const producer = kafka.producer();
