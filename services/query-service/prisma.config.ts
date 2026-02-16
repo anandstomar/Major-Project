@@ -11,6 +11,6 @@ export default defineConfig({
 
   // 3. Renamed from "db" to "datasource"
   datasource: {
-    url: "postgresql://indexer:indexerpwd@127.0.0.1:5432/indexer?schema=public",
+    url: env('DATABASE_URL'),
   },
 });

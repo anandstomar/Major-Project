@@ -14,6 +14,10 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
+      initContainers:
+        - name: prisma-db-push
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["npx", "prisma", "db", "push"]
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 12 }}
       containers:
