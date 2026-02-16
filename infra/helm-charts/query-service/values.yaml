@@ -13,9 +13,9 @@ env:
   - name: KAFKA_BROKERS
     value: kafka-external:9092
   - name: DATABASE_URL
-    value: "postgresql://indexer:indexerpwd@postgres.default.svc.cluster.local:5432/indexer?schema=public"
+    value: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
   - name: POSTGRES_HOST
-    value: "postgres.default.svc.cluster.local"
+    value: "postgresql.default.svc.cluster.local"
   - name: POSTGRES_PORT
     value: "5432"
   - name: POSTGRES_USER
