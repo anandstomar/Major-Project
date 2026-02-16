@@ -1,4 +1,6 @@
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export default defineConfig({
   // 1. Schema path is now a top-level property
@@ -11,6 +13,6 @@ export default defineConfig({
 
   // 3. Renamed from "db" to "datasource"
   datasource: {
-    url: env('DATABASE_URL'),
+    url: process.env.DATABASE_URL,
   },
 });

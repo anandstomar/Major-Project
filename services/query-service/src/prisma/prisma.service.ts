@@ -3,12 +3,15 @@ import { PrismaClient } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import dotenv from 'dotenv';
+dotenv.config();
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(private configService: ConfigService) {
+    console.log('Initializing PrismaService with DATABASE_URL:', configService.get<string>('DATABASE_URL'));
     const dbUrl = configService.get<string>('DATABASE_URL');
 
     if (!dbUrl) {
@@ -30,8 +33,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-      await this.$connect();
-      this.logger.log('✅ Connected to Database (Prisma v7 with Driver Adapter)');  
+      try {
+        await this.$queryRaw`SELECT 1`; 
+        this.logger.log('✅ Real connection established to Database!');  
+      } catch (error) {
+        this.logger.error('❌ FAILED TO CONNECT TO DATABASE!', error);
+        process.exit(1);
+      }
   }
 
   async onModuleDestroy() {
