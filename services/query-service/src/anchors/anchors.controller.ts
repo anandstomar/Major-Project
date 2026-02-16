@@ -2,7 +2,7 @@ import { Controller, Get, Param, UseGuards, NotFoundException, Post, Body } from
 import { AnchorsService } from './anchors.service';
 import { JwtAuthGuard } from './jwt-auth.guard'; 
 
-@Controller('api/query/anchors') 
+@Controller('query/anchors') 
 @UseGuards(JwtAuthGuard) 
 export class AnchorsController {
   constructor(private readonly svc: AnchorsService) {}

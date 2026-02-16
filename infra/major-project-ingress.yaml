@@ -22,7 +22,7 @@ spec:
                 name: auth 
                 port:
                   number: 8090
-          - path: /api/query/anchors
+          - path: /api/v1/query/anchors
             pathType: Prefix
             backend:
               service:
