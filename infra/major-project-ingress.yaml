@@ -35,7 +35,7 @@ spec:
               service:
                 name: ingest-service
                 port:
-                  number: 4000
+                  number: 3001
           - path: /
             pathType: Prefix
             backend:
