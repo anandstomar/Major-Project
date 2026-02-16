@@ -29,6 +29,13 @@ spec:
                 name: query-service
                 port:
                   number: 8081
+          - path: /api/v1/ingest
+            pathType: Prefix
+            backend:
+              service:
+                name: ingest-service
+                port:
+                  number: 4000
           - path: /
             pathType: Prefix
             backend:
