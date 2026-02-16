@@ -15,7 +15,7 @@ env:
   - name: DATABASE_URL
     value: "postgresql://indexer:indexerpwd@postgres-service.default.svc.cluster.local:5432/indexer?schema=public"
   - name: POSTGRES_HOST
-    value: "172.18.0.1"
+    value: "postgres-service.default.svc.cluster.local"
   - name: POSTGRES_PORT
     value: "5432"
   - name: POSTGRES_USER
