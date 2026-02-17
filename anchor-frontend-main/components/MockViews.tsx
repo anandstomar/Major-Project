@@ -415,7 +415,6 @@ export const Validator = () => {
               const token = localStorage.getItem("access_token");
               if (!token) throw new Error("No auth token");
 
-              // Validate JSON input
               let parsedArray;
               try {
                   parsedArray = JSON.parse(input);
@@ -424,7 +423,6 @@ export const Validator = () => {
                   throw new Error("Invalid JSON array format");
               }
 
-              // Call the Java endpoint we built
               const response = await fetchWithRetry("/validator/merkle/compute", {
                   method: "POST",
                   headers: { 
@@ -437,8 +435,12 @@ export const Validator = () => {
               if (!response.ok) throw new Error("Failed to contact Validator Service");
               
               const data = await response.json();
-              setRoot(data.root);
-              setToast(`Root computed successfully for ${data.leafCount} leaves`);
+              console.log("Java Merkle API Response:", data); // 👈 Let's see what Java actually sent!
+              
+              // 👇 Bulletproof fallback checking multiple property names 👇
+              const hash = data.root || data.computedMerkleRoot || "Error: Missing hash in response";
+              setRoot(hash);
+              setToast(`Root computed successfully for ${data.leafCount || parsedArray.length} leaves`);
           } catch (err: any) {
               setToast(`❌ Error: ${err.message}`);
           } finally {

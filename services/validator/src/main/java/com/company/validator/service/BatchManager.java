@@ -43,19 +43,37 @@ public class BatchManager {
     this.previewTopic = previewTopic;
   }
 
+
   public void accept(IngestEvent e) {
-    Batch b = batches.computeIfAbsent(e.batch_id, k -> new Batch());
+    String safeBatchId = (e.batch_id != null && !e.batch_id.isEmpty()) ? e.batch_id : "manual-ui-batch";
+
+    Batch b = batches.computeIfAbsent(safeBatchId, k -> new Batch());
     synchronized (b) {
       b.events.add(e);
       if (b.scheduled == null) {
-        b.scheduled = scheduler.schedule(() -> flush(e.batch_id), batchTimeMs, TimeUnit.MILLISECONDS);
+        // Use the safeBatchId here!
+        b.scheduled = scheduler.schedule(() -> flush(safeBatchId), batchTimeMs, TimeUnit.MILLISECONDS);
       }
       if (b.events.size() >= batchSize) {
         b.scheduled.cancel(false);
-        flush(e.batch_id);
+        flush(safeBatchId); // And here!
       }
     }
   }
+
+  // public void accept(IngestEvent e) {
+  //   Batch b = batches.computeIfAbsent(e.batch_id, k -> new Batch());
+  //   synchronized (b) {
+  //     b.events.add(e);
+  //     if (b.scheduled == null) {
+  //       b.scheduled = scheduler.schedule(() -> flush(e.batch_id), batchTimeMs, TimeUnit.MILLISECONDS);
+  //     }
+  //     if (b.events.size() >= batchSize) {
+  //       b.scheduled.cancel(false);
+  //       flush(e.batch_id);
+  //     }
+  //   }
+  // }
 
   private void flush(String batchId) {
     Batch b = batches.remove(batchId);
