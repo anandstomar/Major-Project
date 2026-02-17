@@ -10,6 +10,7 @@ import { Status } from '../types';
 import { Modal } from './ui/Modal';
 import { IllusUpload, IllusTree } from './ui/Assets';
 import { Toast } from './ui/Toast';
+import { fetchWithRetry } from '../utils/api';
 
 // --- Reusable Components ---
 

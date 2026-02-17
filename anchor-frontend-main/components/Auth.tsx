@@ -19,7 +19,7 @@ export const Login: React.FC<AuthProps> = ({ onLogin }) => {
   const [showPwd, setShowPwd] = useState(false);
   
   // Added state to capture what the user types
-  const [email, setEmail] = useState('testuser'); // Matching your Keycloak test user
+  const [email, setEmail] = useState('testuser@example.com'); // Matching your Keycloak test user
   const [password, setPassword] = useState('password');
   
   const handleSubmit = async (e: React.FormEvent) => {

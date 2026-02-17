@@ -100,6 +100,7 @@ public class ValidatorController {
             }
             return ResponseEntity.ok(runs);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
