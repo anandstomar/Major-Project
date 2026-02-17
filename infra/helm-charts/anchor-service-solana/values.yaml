@@ -8,8 +8,8 @@ service:
   type: ClusterIP
   port: 3000
 env:
-  SOLANA_RPC: "http://solana:8899"
-  SOLANA_PROGRAM_ID: "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
+  SOLANA_RPC: "https://api.devnet.solana.com"
+  SOLANA_PROGRAM_ID: "4wa3xzTQK88UeEKBNoN1NxEU6dTjak6qYR8N7VDdLyz3"
   SOLANA_IDL_CONFIGMAP: "anchor-program-idl" # name of configmap containing idl.json
   SOLANA_FEE_PAYER_SECRET: "dev-fee-payer" # k8s secret name containing fee payer key
   KAFKA_BROKERS: "kafka-external:9092"
