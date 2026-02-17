@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/validator
-  tag: 1fffd6f6d228b4d171e562add0754d54434e68e4
+  tag: fe30c58ae99533b4f1f237c0743694f33fc5b05a
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -17,12 +17,12 @@ env:
   - name: KAFKA_CLIENT_ID
     value: "validator"
   - name: MINIO_ENDPOINT
-    value: "minio"              
+    value: "minio"
   - name: MINIO_PORT
     value: "9000"
   - name: MINIO_ACCESS_KEY
-    value: "minioadmin"        
+    value: "minioadmin"
   - name: MINIO_SECRET_KEY
-    value: "minioadmin"        
+    value: "minioadmin"
   - name: MINIO_BUCKET
     value: "ingest"
