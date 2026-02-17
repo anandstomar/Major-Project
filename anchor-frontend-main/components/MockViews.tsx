@@ -435,11 +435,13 @@ export const Validator = () => {
               if (!response.ok) throw new Error("Failed to contact Validator Service");
               
               const data = await response.json();
-              console.log("Java Merkle API Response:", data); // 👈 Let's see what Java actually sent!
+              console.log("Java Response:", data); // Check your F12 console to see the raw data!
               
-              // 👇 Bulletproof fallback checking multiple property names 👇
-              const hash = data.root || data.computedMerkleRoot || "Error: Missing hash in response";
-              setRoot(hash);
+              if (data.root) {
+                  setRoot(data.root);
+              } else {
+                  setRoot("Error: Missing root in response");
+              }
               setToast(`Root computed successfully for ${data.leafCount || parsedArray.length} leaves`);
           } catch (err: any) {
               setToast(`❌ Error: ${err.message}`);
