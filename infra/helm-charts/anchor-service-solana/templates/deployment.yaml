@@ -30,6 +30,10 @@ spec:
               value: "/var/idl/anchor_program.json"
             - name: SOLANA_FEE_PAYER_PATH
               value: "/keys/fee-payer.json"
+            - name: KAFKA_BROKERS
+              value: "{{ .Values.env.KAFKA_BROKERS }}"
+            - name: DATABASE_URL
+              value: "{{ .Values.env.DATABASE_URL }}"
           volumeMounts:
             - name: idl
               mountPath: /var/idl
