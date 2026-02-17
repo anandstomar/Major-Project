@@ -12,6 +12,13 @@ export async function fetchWithRetry(
   try {
     const response = await fetch(url, options);
 
+    if (response.status === 401) {
+      console.warn("Session expired. Logging out...");
+      localStorage.removeItem("access_token"); // Destroy the dead token
+      window.location.href = "/login";         // Force redirect to the login page
+      throw new Error("Unauthorized - Redirecting to login");
+    }
+
     // If it's a server error (5xx), throw so we can catch and retry
     if (response.status >= 500 && response.status < 600) {
       throw new Error(`Server Error: ${response.status}`);

@@ -47,10 +47,11 @@ export const Anchors: React.FC = () => {
 //     }
 //   };
 
-    // Add a 'silent' parameter so the loading spinner doesn't flash every 5 seconds
+  // Add 'silent' parameter to prevent the giant overlay from flashing
   const fetchAnchors = async (silent = false) => {
     try {
-      if (!silent) setIsLoading(true);
+      if (!silent) setIsLoading(true); // Only show overlay if NOT silent
+      
       const token = localStorage.getItem("access_token");
       if (!token) throw new Error("No auth token");
 
@@ -60,9 +61,8 @@ export const Anchors: React.FC = () => {
       });
       const data = await response.json();
       setAnchors(data.items || []);
-      
-      // Optional: If we have a selected anchor open in the side drawer, 
-      // update its data too so the drawer shows the txHash when it arrives!
+
+      // Keep the side drawer updated if a transaction finishes!
       if (selectedAnchor) {
          const updatedSelected = (data.items || []).find((a: any) => a.requestId === selectedAnchor.requestId);
          if (updatedSelected) setSelectedAnchor(updatedSelected);
@@ -77,16 +77,19 @@ export const Anchors: React.FC = () => {
   };
 
   // Set up the polling interval
+  // 1. INITIAL PAGE LOAD (Runs exactly once, shows the spinner)
   useEffect(() => {
-    fetchAnchors(); // Initial load with spinner
+    fetchAnchors(false);
+  }, []);
 
-    // Poll the query-service every 5 seconds silently
+  // 2. BACKGROUND POLLING (Silent, re-binds safely if selectedAnchor changes)
+  useEffect(() => {
     const interval = setInterval(() => {
       fetchAnchors(true); 
     }, 5000);
 
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [selectedAnchor]); // Add selectedAnchor as a dependency so the drawer updates
+    return () => clearInterval(interval);
+  }, [selectedAnchor]);
 
   // Load data on mount
   useEffect(() => {
@@ -160,6 +163,44 @@ export const Anchors: React.FC = () => {
     } catch {
       return [];
     }
+  };
+
+const handleReVerify = async () => {
+      if (!selectedAnchor || !selectedAnchor.eventsJson) return;
+      
+      try {
+          setToast("Running mathematical verification via Java Validator...");
+          const eventsArray = getParsedEvents(selectedAnchor.eventsJson);
+          
+          // 1. Grab the token (fetchWithRetry needs it if your API gateway enforces auth)
+          const token = localStorage.getItem("access_token");
+          if (!token) throw new Error("No auth token");
+
+          // 2. Use your K8s-aware fetch utility instead of localhost!
+          const response = await fetchWithRetry("/validator/reverify", {
+              method: "POST",
+              headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}` 
+              },
+              body: JSON.stringify(eventsArray)
+          });
+          
+          if (!response.ok) throw new Error("Validation service unavailable");
+          
+          const data = await response.json();
+          const isValid = data.computedMerkleRoot === selectedAnchor.merkleRoot;
+
+          if (isValid) {
+              setToast(`✅ Valid! The calculated root matches the Solana Blockchain.`);
+          } else {
+              setToast(`❌ Mismatch! Calculated: ${data.computedMerkleRoot}, Blockchain: ${selectedAnchor.merkleRoot}`);
+          }
+          
+      } catch (err: any) {
+          console.error(err);
+          setToast(`❌ Error contacting Validator Service: ${err.message}`);
+      }
   };
 
   return (
@@ -350,7 +391,7 @@ export const Anchors: React.FC = () => {
                             <Download size={16} /> JSON
                         </button>
                         <button 
-                            onClick={() => setToast("Verification process queued")}
+                            onClick={handleReVerify}
                             className="flex-1 py-2 px-3 bg-slate-900 text-white rounded-lg shadow-sm text-sm font-medium hover:bg-slate-800 flex justify-center items-center gap-2"
                         >
                             <Check size={16} /> Re-Verify

@@ -36,6 +36,13 @@ spec:
                 name: ingest-service
                 port:
                   number: 3001
+          - path: /api/v1/validator
+            pathType: Prefix
+            backend:
+              service:
+                name: validator
+                port:
+                  number: 8084
           - path: /
             pathType: Prefix
             backend:
