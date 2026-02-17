@@ -13,4 +13,4 @@ env:
   SOLANA_IDL_CONFIGMAP: "anchor-program-idl"   # name of configmap containing idl.json
   SOLANA_FEE_PAYER_SECRET: "anchor-fee-payer"   # k8s secret name containing fee payer key
   KAFKA_BROKERS: "kafka-external:9092"
-  DATABASE_URL: "postgresql://postgres:postgres@postgresql:5432/provenance?schema=public"
+  DATABASE_URL: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"

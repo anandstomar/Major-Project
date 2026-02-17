@@ -22,8 +22,8 @@ jobs:
           - service: anchor-service
             folder: anchor-service
             dockerfile: Dockerfile.go
-          - service: anchor-node-worker 
-            folder: anchor-service        
+          - service: anchor-service-solana
+            folder: anchor-service      
             dockerfile: Dockerfile.node 
           - service: anchoring-scheduler
             folder: anchoring-scheduler 
@@ -31,6 +31,9 @@ jobs:
           - service: indexer  
             folder: indexer 
             dockerfile: Dockerfile
+          - service: indexer-solana
+            folder: indexer 
+            dockerfile: Dockerfile.node
           - service: ingest-service
             folder: ingest-service
             dockerfile: Dockerfile

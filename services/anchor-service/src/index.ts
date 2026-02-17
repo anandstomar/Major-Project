@@ -33,6 +33,12 @@ async function run() {
       if (!message.value) return;
 
       const payload = JSON.parse(message.value.toString());
+
+      if(!payload.requestId) {
+          console.warn(`⚠️ Skipping old/malformed message:`, payload);
+          return; // Instantly skip this message and move to the next one
+      }
+
       console.log(`\n📥 Received Job from Kafka: ${payload.requestId}`);
 
       try {

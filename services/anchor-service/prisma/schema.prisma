@@ -10,13 +10,15 @@ datasource db {
 
 model Anchor {
   id          Int      @id @default(autoincrement())
-  requestId   String   @unique
-  merkleRoot  String?
-  status      String   @default("PENDING") // PENDING, PROCESSING, OK, FAILED
+  requestId   String   @unique @map("request_id")
+  merkleRoot  String?  @map("merkle_root")
+  status      String   @default("PENDING") 
   submitter   String?
-  eventsJson  String?  // Storing the raw JSON array as a string
-  txHash      String?
-  blockNumber String?
-  submittedAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  eventsJson  String?  @map("events_json")
+  txHash      String?  @map("tx_hash")
+  blockNumber String?  @map("block_number")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("anchors")
 }

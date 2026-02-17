@@ -27,9 +27,30 @@ export const Anchors: React.FC = () => {
   const [filterQuery, setFilterQuery] = useState('');
 
   // Fetch real data from the NestJS Query Service
-  const fetchAnchors = async () => {
+//   const fetchAnchors = async () => {
+//     try {
+//       setIsLoading(true);
+//       const token = localStorage.getItem("access_token");
+//       if (!token) throw new Error("No auth token");
+
+//       const response = await fetchWithRetry("/query/anchors", {
+//         method: "GET",
+//         headers: { "Authorization": `Bearer ${token}` }
+//       });
+//       const data = await response.json();
+//       setAnchors(data.items || []);
+//     } catch (err: any) {
+//       console.error(err);
+//       setToast("Failed to load anchors from database");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+    // Add a 'silent' parameter so the loading spinner doesn't flash every 5 seconds
+  const fetchAnchors = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const token = localStorage.getItem("access_token");
       if (!token) throw new Error("No auth token");
 
@@ -39,13 +60,33 @@ export const Anchors: React.FC = () => {
       });
       const data = await response.json();
       setAnchors(data.items || []);
+      
+      // Optional: If we have a selected anchor open in the side drawer, 
+      // update its data too so the drawer shows the txHash when it arrives!
+      if (selectedAnchor) {
+         const updatedSelected = (data.items || []).find((a: any) => a.requestId === selectedAnchor.requestId);
+         if (updatedSelected) setSelectedAnchor(updatedSelected);
+      }
+      
     } catch (err: any) {
       console.error(err);
-      setToast("Failed to load anchors from database");
+      if (!silent) setToast("Failed to load anchors from database");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
+
+  // Set up the polling interval
+  useEffect(() => {
+    fetchAnchors(); // Initial load with spinner
+
+    // Poll the query-service every 5 seconds silently
+    const interval = setInterval(() => {
+      fetchAnchors(true); 
+    }, 5000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [selectedAnchor]); // Add selectedAnchor as a dependency so the drawer updates
 
   // Load data on mount
   useEffect(() => {
