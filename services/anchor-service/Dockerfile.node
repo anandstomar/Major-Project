@@ -1,30 +1,88 @@
-# Node image with build deps
+# ==========================================
+# Stage 1: Build Environment
+# ==========================================
 FROM node:20-alpine AS build
 WORKDIR /app
-# install build deps
+
+# 1. Install ALL dependencies (including dev deps like TypeScript)
 COPY package.json package-lock.json* tsconfig.json ./
-RUN npm ci --production=false
-COPY src ./src
-# If you need to copy the IDL at build time (optional)
-# COPY ../../programs/anchor_program/target/idl/ ./idl
-# RUN cp src/idl/anchor_program.json dist/idl/anchor_program.json
-# RUN cp src/dev-fee-payer.json dist/idl/dev-fee-payer.json
+RUN npm ci --production=false || npm install
+
+# 2. Copy Prisma schema and generate the client for build validation
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# 3. Copy source code and configuration files
+# Using COPY . . ensures we grab your src folder, configs, and JSONs
+COPY . .
+
+# 4. Build the TypeScript code (compiles to /dist)
 RUN npm run build
 
-# runtime image
+# 5. VERY IMPORTANT: Copy Solana configs into /dist 
+# so __dirname in solana-client.js can find them at runtime!
+RUN cp anchor_program.json dist/ || true
+RUN cp dev-fee-payer.json dist/ || true
+
+
+# ==========================================
+# Stage 2: Production Runtime
+# ==========================================
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# COPY --from=build /app/package.json /app/package-lock.json* /app/dist ./ 
+# 1. Copy package files and install ONLY production dependencies
+# This keeps your final Docker image incredibly small and secure
+COPY package.json package-lock.json* ./
+RUN npm ci --production || npm install --production
 
-COPY --from=build /app/package.json /app/package-lock.json* ./
+# 2. Generate Prisma Client inside the production node_modules
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# 3. Copy only the compiled code (and copied JSONs) from the build stage
 COPY --from=build /app/dist ./dist
-RUN npm ci --production
-# make optional keys folder for mounted fee payer
+
+# 4. Make optional keys folder for mounted fee payer (from your template)
 RUN mkdir -p /keys
-EXPOSE 3000
+
+# Start the Kafka Consumer / Anchor Service
 CMD ["node", "dist/index.js"]
+
+
+
+
+
+
+
+# # Node image with build deps
+# FROM node:20-alpine AS build
+# WORKDIR /app
+# # install build deps
+# COPY package.json package-lock.json* tsconfig.json ./
+# RUN npm ci --production=false
+# COPY src ./src
+# # If you need to copy the IDL at build time (optional)
+# # COPY ../../programs/anchor_program/target/idl/ ./idl
+# # RUN cp src/idl/anchor_program.json dist/idl/anchor_program.json
+# # RUN cp src/dev-fee-payer.json dist/idl/dev-fee-payer.json
+# RUN npm run build
+
+# # runtime image
+# FROM node:20-alpine AS runtime
+# WORKDIR /app
+# ENV NODE_ENV=production
+
+# # COPY --from=build /app/package.json /app/package-lock.json* /app/dist ./ 
+
+# COPY --from=build /app/package.json /app/package-lock.json* ./
+# COPY --from=build /app/dist ./dist
+# RUN npm ci --production
+# # make optional keys folder for mounted fee payer
+# RUN mkdir -p /keys
+# EXPOSE 3000
+# CMD ["node", "dist/index.js"]
 
 
 

@@ -61,18 +61,54 @@ export const Anchors: React.FC = () => {
       setToast(filterQuery ? `Filter applied: "${filterQuery}"` : "Filter cleared");
   };
 
-  const handleSubmitAnchor = () => {
+  const handleSubmitAnchor = async () => {
       if (!submitData.events) return;
       setIsSubmitting(true);
       
-      // Simulate submission delay for now (until ingest-service is ready)
-      setTimeout(() => {
+      try {
+          // 1. Grab the token you saved during Login
+          const token = localStorage.getItem("access_token");
+          if (!token) throw new Error("No auth token found. Please log in again.");
+
+          // Optional: Validate that the input is actually a JSON array before sending
+          try {
+              JSON.parse(submitData.events);
+          } catch (e) {
+              throw new Error("Events payload must be valid JSON.");
+          }
+
+          // 2. Send the real request to the Kubernetes Ingest Service
+          const response = await fetchWithRetry("/ingest", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                  // Send exactly what the user typed in the textarea
+                  events: submitData.events, 
+                  submitter: submitData.submitter
+              })
+          });
+
+          const data = await response.json();
+
+          // 3. Handle the response
+          if (response.status === 202) {
+              setToast(`✅ Queued successfully! ID: ${data.requestId}`);
+              setIsSubmitOpen(false); // Close the modal
+              setSubmitData({ events: '', submitter: 'admin-console' }); // Reset form
+              fetchAnchors(); // Refresh the table to show the new data (once the consumer is built!)
+          } else {
+              setToast(`❌ Failed: ${data.error || 'Unknown error'}`);
+          }
+
+      } catch (err: any) {
+          console.error("Submission error:", err);
+          setToast(`❌ Error: ${err.message}`);
+      } finally {
           setIsSubmitting(false);
-          setIsSubmitOpen(false);
-          setToast("Anchor request submitted successfully");
-          setSubmitData({ events: '', submitter: 'admin-console' });
-          fetchAnchors(); // Refresh the table
-      }, 1500);
+      }
   };
 
   // Helper to safely parse eventsJson from Prisma

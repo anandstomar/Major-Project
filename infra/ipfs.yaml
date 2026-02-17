@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ipfs
-          image: ipfs/kubo:latest
+          image: docker.io/ipfs/kubo:latest
           ports:
             - containerPort: 5001
               name: api
