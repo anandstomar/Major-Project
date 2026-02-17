@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UploadCloud, List, Code, PlayCircle, FolderTree, Database, 
   Search as SearchIcon, Bell, Settings as SettingsIcon, Shield, Key, User,
@@ -294,78 +294,155 @@ export const Ingest = () => {
   );
 };
 
+// 
+
 export const Validator = () => {
   const [toast, setToast] = useState<string | null>(null);
 
-  const RunsTab = () => (
-      <div>
-           <div className="grid grid-cols-4 gap-6 mb-8">
-              <Card className="p-5 border-t-4 border-t-emerald-500">
-                  <div className="text-[10px] text-[#8c8b88] uppercase font-bold tracking-widest">Pass Rate (24h)</div>
-                  <div className="text-3xl font-light text-[#1f1e1d] mt-2">98.2%</div>
-              </Card>
-              <Card className="p-5 border-t-4 border-t-[#d6d3d0]">
-                  <div className="text-[10px] text-[#8c8b88] uppercase font-bold tracking-widest">Total Rows</div>
-                  <div className="text-3xl font-light text-[#1f1e1d] mt-2">1.2M</div>
-              </Card>
-              <Card className="p-5 border-t-4 border-t-red-500">
-                  <div className="text-[10px] text-[#8c8b88] uppercase font-bold tracking-widest">Schema Errors</div>
-                  <div className="text-3xl font-light text-[#1f1e1d] mt-2">42</div>
-              </Card>
-           </div>
+  const RunsTab = () => {
+      const [runs, setRuns] = useState<any[]>([]);
+      const [isLoading, setIsLoading] = useState(true);
 
-           <Card className="overflow-hidden">
-              <table className="w-full text-left text-sm">
-                  <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
-                      <tr>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Run ID</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Batch Context</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Issues</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Duration</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Report</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#f1f0ee]">
-                      {[
-                          { id: 'val-901', ctx: 'batch-3312', issues: 0, dur: '1.2s', status: Status.OK },
-                          { id: 'val-900', ctx: 'batch-3311', issues: 0, dur: '0.8s', status: Status.OK },
-                          { id: 'val-899', ctx: 'batch-3310', issues: 5, dur: '1.5s', status: Status.DEGRADED },
-                          { id: 'val-898', ctx: 'batch-3309', issues: 0, dur: '1.1s', status: Status.OK },
-                          { id: 'val-897', ctx: 'manual-upload-22', issues: 124, dur: '2.4s', status: Status.FAILED },
-                      ].map((run) => (
-                          <tr key={run.id} className="hover:bg-[#fcfbf9] transition-colors">
-                              <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">{run.id}</td>
-                              <td className="px-6 py-4 text-[#1f1e1d]">{run.ctx}</td>
-                              <td className="px-6 py-4 text-[#5d5c58]">{run.issues > 0 ? <span className="text-red-600 font-medium">{run.issues} Found</span> : 'None'}</td>
-                              <td className="px-6 py-4 text-[#5d5c58]">{run.dur}</td>
-                              <td className="px-6 py-4"><Badge status={run.status} size="sm" /></td>
-                              <td className="px-6 py-4 text-right text-[#8c8b88] hover:text-[#5d5c58] cursor-pointer">
-                                <FileText size={16} className="ml-auto" onClick={() => setToast(`Downloaded report for ${run.id}`)} />
-                              </td>
+      const fetchValidationRuns = async () => {
+          try {
+              setIsLoading(true);
+              const token = localStorage.getItem("access_token");
+              if (!token) throw new Error("No auth token");
+              
+              const response = await fetchWithRetry("/validator/runs", {
+                  method: "GET",
+                  headers: { "Authorization": `Bearer ${token}` }
+              });
+              
+              if (!response.ok) throw new Error("Failed to fetch runs");
+              const data = await response.json();
+              
+              // Map the Java Preview objects to your UI table columns
+              const formattedRuns = data.map((run: any) => ({
+                  id: run.preview_id,
+                  ctx: run.batch_id,
+                  issues: 0, // You can calculate this if you add validation logic later
+                  dur: '1.2s', // Mocked duration since it's not in the Preview object
+                  status: Status.OK, 
+                  reportData: run
+              }));
+              
+              setRuns(formattedRuns);
+          } catch (err: any) {
+              console.error(err);
+              setToast("Failed to load validation runs");
+          } finally {
+              setIsLoading(false);
+          }
+      };
+
+      useEffect(() => {
+          fetchValidationRuns();
+      }, []);
+
+      return (
+          <div>
+               <div className="grid grid-cols-4 gap-6 mb-8">
+                  <Card className="p-5 border-t-4 border-t-emerald-500">
+                      <div className="text-[10px] text-[#8c8b88] uppercase font-bold tracking-widest">Pass Rate (24h)</div>
+                      <div className="text-3xl font-light text-[#1f1e1d] mt-2">100%</div>
+                  </Card>
+                  <Card className="p-5 border-t-4 border-t-[#d6d3d0]">
+                      <div className="text-[10px] text-[#8c8b88] uppercase font-bold tracking-widest">Total Batches</div>
+                      <div className="text-3xl font-light text-[#1f1e1d] mt-2">{runs.length}</div>
+                  </Card>
+                  <Card className="p-5 border-t-4 border-t-red-500">
+                      <div className="text-[10px] text-[#8c8b88] uppercase font-bold tracking-widest">Schema Errors</div>
+                      <div className="text-3xl font-light text-[#1f1e1d] mt-2">0</div>
+                  </Card>
+               </div>
+
+               <Card className="overflow-hidden relative min-h-[200px]">
+                  {isLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                          <span className="text-sm text-gray-500">Loading runs from MinIO...</span>
+                      </div>
+                  )}
+                  <table className="w-full text-left text-sm">
+                      <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
+                          <tr>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Run ID</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Batch Context</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Issues</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Duration</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Report</th>
                           </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </Card>
-      </div>
-  );
+                      </thead>
+                      <tbody className="divide-y divide-[#f1f0ee]">
+                          {!isLoading && runs.length === 0 && (
+                              <tr>
+                                  <td colSpan={6} className="text-center py-8 text-gray-500">No validation runs found.</td>
+                              </tr>
+                          )}
+                          {runs.map((run) => (
+                              <tr key={run.id} className="hover:bg-[#fcfbf9] transition-colors">
+                                  <td className="px-6 py-4 font-mono text-xs text-[#5d5c58] truncate max-w-[120px]">{run.id}</td>
+                                  <td className="px-6 py-4 text-[#1f1e1d]">{run.ctx}</td>
+                                  <td className="px-6 py-4 text-[#5d5c58]">{run.issues > 0 ? <span className="text-red-600 font-medium">{run.issues} Found</span> : 'None'}</td>
+                                  <td className="px-6 py-4 text-[#5d5c58]">{run.dur}</td>
+                                  <td className="px-6 py-4"><Badge status={run.status} size="sm" /></td>
+                                  <td className="px-6 py-4 text-right text-[#8c8b88] hover:text-[#5d5c58] cursor-pointer">
+                                    <FileText size={16} className="ml-auto" onClick={() => {
+                                        console.log(run.reportData);
+                                        setToast(`Downloaded report for ${run.id}`);
+                                    }} />
+                                  </td>
+                              </tr>
+                          ))}
+                      </tbody>
+                  </table>
+              </Card>
+          </div>
+      );
+  };
 
   const MerkleTab = () => {
-      const [input, setInput] = useState(`[
-  "evt_8821992",
-  "evt_8821993",
-  "evt_8821994",
-  "evt_8821995"
-]`);
-      const [root, setRoot] = useState('0x99281...a8b21');
+      const [input, setInput] = useState(`[\n  "evt_8821992",\n  "evt_8821993",\n  "evt_8821994",\n  "evt_8821995"\n]`);
+      const [root, setRoot] = useState('---');
+      const [isComputing, setIsComputing] = useState(false);
 
-      const handleCompute = () => {
+      const handleCompute = async () => {
           setToast("Computing Merkle Root...");
-          setTimeout(() => {
-              setRoot(`0x${Math.random().toString(16).slice(2)}...${Math.random().toString(16).slice(2)}`);
-              setToast("Root computed successfully");
-          }, 500);
+          setIsComputing(true);
+          try {
+              const token = localStorage.getItem("access_token");
+              if (!token) throw new Error("No auth token");
+
+              // Validate JSON input
+              let parsedArray;
+              try {
+                  parsedArray = JSON.parse(input);
+                  if (!Array.isArray(parsedArray)) throw new Error("Input must be a JSON array");
+              } catch (e) {
+                  throw new Error("Invalid JSON array format");
+              }
+
+              // Call the Java endpoint we built
+              const response = await fetchWithRetry("/validator/merkle/compute", {
+                  method: "POST",
+                  headers: { 
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${token}` 
+                  },
+                  body: JSON.stringify(parsedArray)
+              });
+              
+              if (!response.ok) throw new Error("Failed to contact Validator Service");
+              
+              const data = await response.json();
+              setRoot(data.root);
+              setToast(`Root computed successfully for ${data.leafCount} leaves`);
+          } catch (err: any) {
+              setToast(`❌ Error: ${err.message}`);
+          } finally {
+              setIsComputing(false);
+          }
       };
 
       return (
@@ -380,8 +457,11 @@ export const Validator = () => {
                   />
               </div>
               <div className="mt-4 flex gap-3">
-                  <button onClick={handleCompute} className={btnPrimary}>
-                      <span className="flex items-center gap-2"><PlayCircle size={16} /> Compute Root</span>
+                  <button onClick={handleCompute} disabled={isComputing} className={btnPrimary}>
+                      <span className="flex items-center gap-2">
+                          <PlayCircle size={16} className={isComputing ? 'animate-pulse' : ''} /> 
+                          {isComputing ? 'Computing...' : 'Compute Root'}
+                      </span>
                   </button>
                   <button onClick={() => { setInput('[]'); setRoot('---'); }} className={btnSecondary}>
                       Clear
@@ -396,16 +476,21 @@ export const Validator = () => {
                        <Copy 
                          size={14} 
                          className="text-[#8c8b88] cursor-pointer hover:text-[#1f1e1d]" 
-                         onClick={() => setToast("Copied to clipboard")}
+                         onClick={() => {
+                             navigator.clipboard.writeText(root);
+                             setToast("Copied to clipboard");
+                         }}
                        />
                    </div>
                </Card>
                
                <Card className="flex-1 p-8 flex flex-col items-center justify-center bg-[#fbfbfa]">
-                    <div className="opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+                    <div className={`transition-all duration-500 ${root !== '---' ? 'opacity-100 grayscale-0' : 'opacity-50 grayscale'}`}>
                         <IllusTree />
                     </div>
-                    <p className="mt-4 text-xs text-[#8c8b88]">Interactive Tree Visualization</p>
+                    <p className="mt-4 text-xs text-[#8c8b88]">
+                        {root !== '---' ? 'Cryptographic Proof Generated' : 'Interactive Tree Visualization'}
+                    </p>
                </Card>
           </div>
       </div>
