@@ -8,9 +8,15 @@ service:
   type: ClusterIP
   port: 3000
 env:
-  SOLANA_RPC: "http://solana:8899"
-  SOLANA_PROGRAM_ID: "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
-  SOLANA_IDL_CONFIGMAP: "anchor-program-idl" # name of configmap containing idl.json
-  SOLANA_FEE_PAYER_SECRET: "anchor-fee-payer" # k8s secret name containing fee payer key
-  KAFKA_BROKERS: "kafka-external:9092"
-  DATABASE_URL: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
+  - name: SOLANA_RPC
+    value: "http://solana:8899"
+  - name: SOLANA_PROGRAM_ID
+    value:  "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
+  - name: SOLANA_IDL_PATH
+    value: "anchor-program.json" 
+  - name: SOLANA_FEE_PAYER_PATH
+    value: "dev-fee-payer.json"
+  - name: KAFKA_BROKERS
+    value: "kafka-external:9092"
+  - name: DATABASE_URL
+    value: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
