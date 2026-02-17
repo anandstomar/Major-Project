@@ -295,12 +295,9 @@ export const Ingest = () => {
   );
 };
 
-// 
 
-export const Validator = () => {
-  const [toast, setToast] = useState<string | null>(null);
 
-  const RunsTab = () => {
+  const RunsTab = ({ setToast }: { setToast: (msg: string | null) => void }) => {
       const [runs, setRuns] = useState<any[]>([]);
       const [isLoading, setIsLoading] = useState(true);
 
@@ -403,53 +400,89 @@ export const Validator = () => {
       );
   };
 
-  const MerkleTab = () => {
+  const MerkleTab = ({ setToast }: { setToast: (msg: string | null) => void }) => {
       const [input, setInput] = useState(`[\n  "evt_8821992",\n  "evt_8821993",\n  "evt_8821994",\n  "evt_8821995"\n]`);
       const [root, setRoot] = useState('---');
       const [isComputing, setIsComputing] = useState(false);
 
-      const handleCompute = async () => {
-          setToast("Computing Merkle Root...");
-          setIsComputing(true);
-          try {
-              const token = localStorage.getItem("access_token");
-              if (!token) throw new Error("No auth token");
+    //   const handleCompute = async () => {
+    //       setToast("Computing Merkle Root...");
+    //       setIsComputing(true);
+    //       try {
+    //           const token = localStorage.getItem("access_token");
+    //           if (!token) throw new Error("No auth token");
 
-              let parsedArray;
-              try {
-                  parsedArray = JSON.parse(input);
-                  if (!Array.isArray(parsedArray)) throw new Error("Input must be a JSON array");
-              } catch (e) {
-                  throw new Error("Invalid JSON array format");
-              }
+    //           let parsedArray;
+    //           try {
+    //               parsedArray = JSON.parse(input);
+    //               if (!Array.isArray(parsedArray)) throw new Error("Input must be a JSON array");
+    //           } catch (e) {
+    //               throw new Error("Invalid JSON array format");
+    //           }
 
-              const response = await fetchWithRetry("/validator/merkle/compute", {
-                  method: "POST",
-                  headers: { 
-                      "Content-Type": "application/json",
-                      "Authorization": `Bearer ${token}` 
-                  },
-                  body: JSON.stringify(parsedArray)
-              });
+    //           const response = await fetchWithRetry("/validator/merkle/compute", {
+    //               method: "POST",
+    //               headers: { 
+    //                   "Content-Type": "application/json",
+    //                   "Authorization": `Bearer ${token}` 
+    //               },
+    //               body: JSON.stringify(parsedArray)
+    //           });
               
-              if (!response.ok) throw new Error("Failed to contact Validator Service");
+    //           if (!response.ok) throw new Error("Failed to contact Validator Service");
               
-              const data = await response.json();
-              console.log("Java Response:", data); // Check your F12 console to see the raw data!
+    //           const data = await response.json();
+    //           console.log("Java Response:", data); 
               
-              if (data.root) {
-                  setRoot(data.root);
-              } else {
-                  setRoot("Error: Missing root in response");
-              }
-              setToast(`Root computed successfully for ${data.leafCount || parsedArray.length} leaves`);
-          } catch (err: any) {
-              setToast(`❌ Error: ${err.message}`);
-          } finally {
-              setIsComputing(false);
-          }
-      };
+    //           if (data.root) {
+    //               setRoot(data.root);
+    //           } else {
+    //               setRoot("Error: Missing root in response");
+    //           }
+    //           setToast(`Root computed successfully for ${data.leafCount || parsedArray.length} leaves`);
+    //       } catch (err: any) {
+    //           setToast(`❌ Error: ${err.message}`);
+    //       } finally {
+    //           setIsComputing(false);
+    //       }
+    //   };
 
+    const handleCompute = async () => {
+    setToast("Computing Merkle Root...");
+    setIsComputing(true);
+    try {
+        const token = localStorage.getItem("access_token");
+        if (!token) throw new Error("No auth token");
+
+        const response = await fetchWithRetry("/validator/merkle/compute", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            },
+            body: input // Sending the raw JSON array string from textarea
+        });
+        
+        if (!response.ok) throw new Error("Failed to contact Validator Service");
+        
+        const data = await response.json();
+        console.log("Java Response2:", data.root);    
+        
+        // The console log shows Java sends 'root'. 
+        // We update the state here to trigger the UI re-render.
+        if (data && data.root) {
+            setRoot(data.root); 
+            setToast(`✅ Root computed: ${data.root.substring(0, 12)}...`);
+        } else {
+            console.error("Unexpected response structure:", data);
+            setToast("❌ Error: Response missing 'root' property");
+        }
+    } catch (err: any) {
+        setToast(`❌ Error: ${err.message}`);
+    } finally {
+        setIsComputing(false);
+    }
+};
       return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
           <div className="flex flex-col h-full">
@@ -502,10 +535,14 @@ export const Validator = () => {
       );
   };
 
+  export const Validator = () => {
+  const [toast, setToast] = useState<string | null>(null);
+
   const tabs = [
-    { id: 'runs', label: 'Validation Runs', icon: Activity, content: <RunsTab /> },
-    { id: 'merkle', label: 'Merkle Tools', icon: FolderTree, content: <MerkleTab /> },
+    { id: 'runs', label: 'Validation Runs', icon: Activity, content: <RunsTab setToast={setToast} /> },
+    { id: 'merkle', label: 'Merkle Tools', icon: FolderTree, content: <MerkleTab setToast={setToast} /> },
   ];
+
   return (
     <>
         <Tabs tabs={tabs} />
