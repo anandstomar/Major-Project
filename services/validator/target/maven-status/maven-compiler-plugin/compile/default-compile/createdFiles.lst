@@ -5,6 +5,7 @@ com\company\validator\config\KafkaConfig.class
 com\company\validator\config\MinioConfig.class
 com\company\validator\dto\IngestEvent.class
 com\company\validator\ValidatorApplication.class
+com\company\validator\controller\ValidatorController.class
 com\company\validator\service\ValidationService.class
 com\company\validator\service\BatchManager$Batch.class
 com\company\validator\service\BatchManager.class

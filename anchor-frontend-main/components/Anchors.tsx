@@ -165,25 +165,24 @@ export const Anchors: React.FC = () => {
     }
   };
 
-const handleReVerify = async () => {
+  const handleReVerify = async () => {
       if (!selectedAnchor || !selectedAnchor.eventsJson) return;
       
       try {
           setToast("Running mathematical verification via Java Validator...");
-          const eventsArray = getParsedEvents(selectedAnchor.eventsJson);
           
-          // 1. Grab the token (fetchWithRetry needs it if your API gateway enforces auth)
           const token = localStorage.getItem("access_token");
           if (!token) throw new Error("No auth token");
 
-          // 2. Use your K8s-aware fetch utility instead of localhost!
+          // Send the EXACT raw string stored in PostgreSQL. 
+          // Do not use JSON.parse or JSON.stringify, as it will alter the hash!
           const response = await fetchWithRetry("/validator/reverify", {
               method: "POST",
               headers: { 
                   "Content-Type": "application/json",
                   "Authorization": `Bearer ${token}` 
               },
-              body: JSON.stringify(eventsArray)
+              body: selectedAnchor.eventsJson 
           });
           
           if (!response.ok) throw new Error("Validation service unavailable");

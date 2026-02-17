@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+// import java.util.ArrayList;
+// import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,18 +26,33 @@ public class ValidatorController {
         this.bucket = bucket;
     }
 
+    // // 1. Endpoint for the "Re-Verify" Button in the UI
+    // @PostMapping("/reverify")
+    // public ResponseEntity<?> reVerifyRoot(@RequestBody List<String> eventsJson) {
+    //     try {
+    //         // Re-run the mathematical Merkle Root generation
+    //         List<String> leaves = new ArrayList<>();
+    //         for (String event : eventsJson) {
+    //             // Using your existing MerkleUtil logic to hash the raw events
+    //             leaves.add(MerkleUtil.sha256Hex(event.getBytes()));
+    //         }
+            
+    //         String computedRoot = "0x" + MerkleUtil.buildMerkleRoot(leaves);
+    //         return ResponseEntity.ok(Map.of("computedMerkleRoot", computedRoot));
+            
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+    //     }
+    // }
+
     // 1. Endpoint for the "Re-Verify" Button in the UI
     @PostMapping("/reverify")
-    public ResponseEntity<?> reVerifyRoot(@RequestBody List<String> eventsJson) {
+    public ResponseEntity<?> reVerifyRoot(@RequestBody String rawEventsJson) {
         try {
-            // Re-run the mathematical Merkle Root generation
-            List<String> leaves = new ArrayList<>();
-            for (String event : eventsJson) {
-                // Using your existing MerkleUtil logic to hash the raw events
-                leaves.add(MerkleUtil.sha256Hex(event.getBytes()));
-            }
+            // Node.js anchor-service hashes the raw JSON string directly.
+            // We must do the exact same thing to verify the signature!
+            String computedRoot = "0x" + MerkleUtil.sha256Hex(rawEventsJson.getBytes(StandardCharsets.UTF_8));
             
-            String computedRoot = "0x" + MerkleUtil.buildMerkleRoot(leaves);
             return ResponseEntity.ok(Map.of("computedMerkleRoot", computedRoot));
             
         } catch (Exception e) {
