@@ -32,10 +32,13 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
+RUN apk add --no-cache openssl
+
 # 1. Copy package files and install ONLY production dependencies
 # This keeps your final Docker image incredibly small and secure
 COPY package.json package-lock.json* ./
 RUN npm ci --production || npm install --production
+
 
 # 2. Generate Prisma Client inside the production node_modules
 COPY prisma ./prisma
