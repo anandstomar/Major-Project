@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service-solana
-  tag: latest
+  tag: d7e3291fb7b79d3fd3b2d0ee044e9cc092014591
 imagePullSecrets:
   - name: ghcrpat
 replicaCount: 1
@@ -10,7 +10,7 @@ service:
 env:
   SOLANA_RPC: "http://solana:8899"
   SOLANA_PROGRAM_ID: "Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq"
-  SOLANA_IDL_CONFIGMAP: "anchor-program-idl"   # name of configmap containing idl.json
-  SOLANA_FEE_PAYER_SECRET: "anchor-fee-payer"   # k8s secret name containing fee payer key
+  SOLANA_IDL_CONFIGMAP: "anchor-program-idl" # name of configmap containing idl.json
+  SOLANA_FEE_PAYER_SECRET: "anchor-fee-payer" # k8s secret name containing fee payer key
   KAFKA_BROKERS: "kafka-external:9092"
   DATABASE_URL: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
