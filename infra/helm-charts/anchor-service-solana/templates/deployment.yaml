@@ -22,14 +22,15 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           env:
-            - name: SOLANA_RPC
-              value: "{{ .Values.env.SOLANA_RPC }}"
-            - name: SOLANA_PROGRAM_ID
-              value: "{{ .Values.env.SOLANA_PROGRAM_ID }}"
-            - name: SOLANA_IDL_PATH
-              value: "/var/idl/anchor_program.json"
-            - name: SOLANA_FEE_PAYER_PATH
-              value: "/keys/fee-payer.json"
+            {{- toYaml .Values.env | nindent 12 }}
+            # - name: SOLANA_RPC
+            #   value: "{{ .Values.env.SOLANA_RPC }}"
+            # - name: SOLANA_PROGRAM_ID
+            #   value: "{{ .Values.env.SOLANA_PROGRAM_ID }}"
+            # - name: SOLANA_IDL_PATH
+            #   value: "/var/idl/anchor_program.json"
+            # - name: SOLANA_FEE_PAYER_PATH
+            #   value: "/keys/fee-payer.json"
           volumeMounts:
             - name: idl
               mountPath: /var/idl
