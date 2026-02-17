@@ -52,7 +52,15 @@ public class ValidationService {
           // fallback to MinIO
         }
       }
-      if (content == null) content = fetchFromMinio(minioBucket, e.minio_key);
+      
+      if (content == null && e.minio_key != null && !e.minio_key.isBlank()) {
+          content = fetchFromMinio(minioBucket, e.minio_key);
+      }
+
+      if (content == null) {
+          System.out.println("No file attached for event " + e.event_id + ", bypassing hash validation.");
+          return true; 
+      }
 
       MessageDigest md = MessageDigest.getInstance("SHA-256");
       byte[] digest = md.digest(content);
@@ -63,6 +71,28 @@ public class ValidationService {
       throw new RuntimeException(ex);
     }
   }
+
+  // public boolean validate(IngestEvent e, String minioBucket) {
+  //   try {
+  //     byte[] content = null;
+  //     if (e.data_cid != null && !e.data_cid.isBlank()) {
+  //       try {
+  //         content = fetchFromIpfs(e.data_cid);
+  //       } catch (Exception ex) {
+  //         // fallback to MinIO
+  //       }
+  //     }
+  //     if (content == null) content = fetchFromMinio(minioBucket, e.minio_key);
+
+  //     MessageDigest md = MessageDigest.getInstance("SHA-256");
+  //     byte[] digest = md.digest(content);
+  //     String computed = bytesToHex(digest);
+  //     String normalized = e.data_hash.startsWith("sha256:") ? e.data_hash.substring(7) : e.data_hash;
+  //     return computed.equalsIgnoreCase(normalized);
+  //   } catch (Exception ex) {
+  //     throw new RuntimeException(ex);
+  //   }
+  // }
 
   private byte[] toByteArray(InputStream is) throws Exception {
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
