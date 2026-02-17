@@ -23,6 +23,12 @@ export class SolanaClient {
     this.program = new anchor.Program(idl, new PublicKey(PROGRAM_ID!), this.provider);
   }
 
+  private getSolanaId(requestId: string): string {
+    let formatted = requestId.replace(/^req-/, '').replace(/-/g, '');
+    if (formatted.length > 32) formatted = formatted.slice(0, 32);
+    return formatted;
+  }
+
   async ensureInit(requestId: string) {
     // attempt to init if account absent
     const [pda] = await anchor.web3.PublicKey.findProgramAddress(
@@ -50,8 +56,10 @@ export class SolanaClient {
     const merkleBuf = Buffer.from(merkleHex.replace(/^0x/, ''), 'hex');
     if (merkleBuf.length !== 32) throw new Error('merkle root 32 bytes required');
 
+    const solanaId = this.getSolanaId(requestId);
+
     const [pda] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("anchor"), Buffer.from(requestId)],
+      [Buffer.from("anchor"), Buffer.from(solanaId)],
       this.program.programId
     );
 
