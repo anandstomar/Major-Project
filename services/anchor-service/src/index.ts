@@ -32,45 +32,52 @@ async function run() {
     eachMessage: async ({ topic, partition, message }) => {
       if (!message.value) return;
 
-      const payload = JSON.parse(message.value.toString());
-
-      if(!payload.requestId) {
-          console.warn(`⚠️ Skipping old/malformed message:`, payload);
-          return; // Instantly skip this message and move to the next one
-      }
-
-      console.log(`\n📥 Received Job from Kafka: ${payload.requestId}`);
-
+      const rawValue = message.value.toString();
+      
       try {
-        // 1. Update DB to PROCESSING so the Frontend knows we started
+        const incomingData = JSON.parse(rawValue);
+
+        // 👇 Map the new envelope structure from the Ingest Service
+        const requestId = incomingData.event_id || incomingData.requestId;
+        const events = incomingData.payload?.events || incomingData.events;
+        const submitter = incomingData.payload?.submitter || incomingData.actor || 'system';
+
+        // THE ABSOLUTE SHIELD
+        if (!requestId) {
+          console.warn(`⚠️ Skipping malformed message. No event_id found:`, incomingData);
+          return; 
+        }
+
+        console.log(`\n📥 Received Job from Kafka: ${requestId}`);
+
+        // 1. Update DB to PROCESSING
+        const rawEvents = typeof events === 'string' ? events : JSON.stringify(events || []);
+        
         await prisma.anchor.upsert({
-          where: { requestId: payload.requestId },
+          where: { requestId: requestId },
           update: { status: 'PROCESSING' },
           create: {
-            requestId: payload.requestId,
-            submitter: payload.submitter || 'system',
-            eventsJson: typeof payload.events === 'string' ? payload.events : JSON.stringify(payload.events),
+            requestId: requestId,
+            submitter: submitter,
+            eventsJson: rawEvents,
             status: 'PROCESSING'
           }
         });
 
-        // 2. Generate a real 32-byte Merkle Root Hex String
-        const rawEvents = typeof payload.events === 'string' ? payload.events : JSON.stringify(payload.events);
+        // 2. Generate Merkle Root
         const hash = crypto.createHash('sha256').update(rawEvents).digest('hex');
         
-        // 3. Submit to Solana using your existing client!
+        // 3. Submit to Solana
         console.log(`⛓️ Anchoring to Solana (PDA via requestID)...`);
-        
-        // Parse the events back to an array for your solana-client signature
         let eventsArray = [];
         try { eventsArray = JSON.parse(rawEvents); } catch (e) {}
 
-        const result = await solanaClient.submit(payload.requestId, hash, eventsArray);
+        const result = await solanaClient.submit(requestId, hash, eventsArray);
         console.log(`✅ Anchored! Signature: ${result.signature}`);
 
-        // 4. Save the final transaction receipt to PostgreSQL
+        // 4. Save the final transaction to PostgreSQL
         await prisma.anchor.update({
-          where: { requestId: payload.requestId },
+          where: { requestId: requestId },
           data: {
             status: 'OK',
             merkleRoot: `0x${hash}`,
@@ -79,26 +86,26 @@ async function run() {
         });
 
       } catch (error: any) {
-        console.error(`❌ Failed to process ${payload.requestId}:`, error);
+        console.error(`❌ Failed to process message:`, error);
         
-        // Mark as FAILED in DB so the Frontend UI reflects the error
-        await prisma.anchor.upsert({
-          where: { requestId: payload.requestId },
-          update: { status: 'FAILED' },
-          create: {
-             requestId: payload.requestId,
-             status: 'FAILED',
-             eventsJson: typeof payload.events === 'string' ? payload.events : JSON.stringify(payload.events),
-          }
-        }).catch((dbErr: any) => console.error("Could not update DB to FAILED state", dbErr));
+        try {
+            const fallbackData = JSON.parse(rawValue);
+            const fallbackId = fallbackData.event_id || fallbackData.requestId;
+            if (fallbackId) {
+                await prisma.anchor.update({
+                    where: { requestId: fallbackId },
+                    data: { status: 'FAILED' }
+                });
+            }
+        } catch (fallbackErr) {
+            // Ignore fallback errors
+        }
       }
     },
   });
 }
 
 run().catch(console.error);
-
-
 
 
 
