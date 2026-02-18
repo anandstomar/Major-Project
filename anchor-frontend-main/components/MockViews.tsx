@@ -656,14 +656,75 @@ export const SearchPage = () => {
 export const Scheduler = () => {
     const [toast, setToast] = useState<string | null>(null);
     const [isPaused, setIsPaused] = useState(false);
+    const [requests, setRequests] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // 1. Fetch real pending requests from the Node.js Scheduler API
+    const fetchRequests = async () => {
+        try {
+            const token = localStorage.getItem("access_token");
+            if (!token) return;
+
+            // Calls GET /api/v1/scheduler/requests
+            const response = await fetchWithRetry("/scheduler/requests", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // The API returns { requests: [...] }
+                setRequests(data.requests || []);
+            }
+        } catch (err) {
+            console.error("Failed to load scheduler requests", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 2. Poll every 5 seconds to see new batches arriving from Java/Kafka
+    useEffect(() => {
+        fetchRequests();
+        const interval = setInterval(fetchRequests, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // 3. Handle the Approve Action (Triggers Blockchain Transaction)
+    const handleApprove = async (requestId: string) => {
+        setToast(`Approving request ${requestId}...`);
+        try {
+            const token = localStorage.getItem("access_token");
+            // Calls POST /api/v1/scheduler/approve/:id
+            const response = await fetchWithRetry(`/scheduler/approve/${requestId}`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.ok) {
+                setToast(`✅ Successfully approved! Sent to Anchor Service.`);
+                // Immediately refresh the list to show status change
+                fetchRequests();
+            } else {
+                setToast(`❌ Failed: ${data.error}`);
+            }
+        } catch (err: any) {
+            setToast(`❌ Network error: ${err.message}`);
+        }
+    };
 
     return (
         <div className="max-w-6xl mx-auto">
+             {/* Header Stats Cards */}
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <Card className="p-6 flex items-center gap-4 border-l-4 border-l-indigo-500">
                     <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full"><Clock size={20} /></div>
                     <div>
-                        <div className="text-2xl font-light text-[#1f1e1d]">45</div>
+                        <div className="text-2xl font-light text-[#1f1e1d]">{requests.length}</div>
                         <div className="text-[10px] text-[#8c8b88] font-bold uppercase tracking-widest">Pending Requests</div>
                     </div>
                 </Card>
@@ -693,38 +754,73 @@ export const Scheduler = () => {
                     }}
                     className={btnSecondary}
                 >
-                    {isPaused ? "Resume Queue" : "Pause Queue"}
+                    <span className="flex items-center gap-2">
+                        {isPaused ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+                        {isPaused ? "Resume Queue" : "Pause Queue"}
+                    </span>
                  </button>
-                 <button onClick={() => setToast("Batch scheduled for immediate execution")} className={btnPrimary}>Force Run Batch</button>
              </div>} />
 
-             <Card className="overflow-hidden">
+             <Card className="overflow-hidden min-h-[200px] relative">
+                  {isLoading && requests.length === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                          <span className="text-sm text-gray-500">Loading requests...</span>
+                      </div>
+                  )}
+
                   <table className="w-full text-left text-sm">
                       <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
                           <tr>
-                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Batch ID</th>
-                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Request Count</th>
-                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Est. Cost</th>
-                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Created</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Request ID</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Previews</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Est. Gas</th>
+                              <th className="px-6 py-4 font-semibold text-[#5d5c58]">Created At</th>
                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
                               <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Action</th>
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-[#f1f0ee]">
-                          {[
-                              { id: 'batch-3012', count: 450, cost: '0.04 SOL', time: '2m ago', status: Status.PENDING },
-                              { id: 'batch-3011', count: 120, cost: '0.01 SOL', time: '15m ago', status: Status.PROCESSING },
-                              { id: 'batch-3010', count: 500, cost: '0.05 SOL', time: '45m ago', status: Status.SUBMITTED },
-                              { id: 'batch-3009', count: 488, cost: '0.04 SOL', time: '1h ago', status: Status.OK },
-                          ].map((batch) => (
-                              <tr key={batch.id} className="hover:bg-[#fcfbf9]">
-                                  <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">{batch.id}</td>
-                                  <td className="px-6 py-4 text-[#1f1e1d] font-medium">{batch.count}</td>
-                                  <td className="px-6 py-4 text-[#5d5c58]">{batch.cost}</td>
-                                  <td className="px-6 py-4 text-[#5d5c58]">{batch.time}</td>
-                                  <td className="px-6 py-4"><Badge status={batch.status} size="sm" /></td>
+                          {requests.length === 0 && !isLoading && (
+                              <tr>
+                                  <td colSpan={6} className="text-center py-12 text-gray-400">
+                                      No pending requests. Submit anchors to generate batches.
+                                  </td>
+                              </tr>
+                          )}
+                          {requests.map((req) => (
+                              <tr key={req.request_id} className="hover:bg-[#fcfbf9]">
+                                  <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">
+                                      {req.request_id.split('-').slice(0,2).join('-')}...
+                                  </td>
+                                  <td className="px-6 py-4 text-[#1f1e1d] font-medium">
+                                      {req.preview_ids?.length || 0} Batches
+                                  </td>
+                                  <td className="px-6 py-4 text-[#5d5c58] font-mono">
+                                      {req.estimated_gas.toLocaleString()}
+                                  </td>
+                                  <td className="px-6 py-4 text-[#5d5c58]">
+                                      {new Date(req.created_at).toLocaleTimeString()}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                      <Badge 
+                                        status={req.status === 'pending' ? Status.PENDING : Status.OK} 
+                                        label={req.status.toUpperCase()} 
+                                        size="sm" 
+                                      />
+                                  </td>
                                   <td className="px-6 py-4 text-right">
-                                      <button onClick={() => setToast(`Inspecting ${batch.id}`)} className="text-[#8c8b88] hover:text-[#BE3F2F] transition-colors"><ArrowRight size={16} className="ml-auto" /></button>
+                                      {req.status === 'pending' ? (
+                                          <button 
+                                              onClick={() => handleApprove(req.request_id)}
+                                              className="bg-[#BE3F2F] hover:bg-[#a33224] text-white px-3 py-1.5 rounded text-xs font-medium transition-colors shadow-sm flex items-center gap-1 ml-auto"
+                                          >
+                                              Approve <ArrowRight size={14} />
+                                          </button>
+                                      ) : (
+                                          <span className="text-emerald-600 text-xs font-medium flex items-center justify-end gap-1">
+                                              <CheckCircle size={14} /> Approved
+                                          </span>
+                                      )}
                                   </td>
                               </tr>
                           ))}
@@ -735,6 +831,89 @@ export const Scheduler = () => {
         </div>
     );
 };
+
+// export const Scheduler = () => {
+//     const [toast, setToast] = useState<string | null>(null);
+//     const [isPaused, setIsPaused] = useState(false);
+
+//     return (
+//         <div className="max-w-6xl mx-auto">
+//              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+//                 <Card className="p-6 flex items-center gap-4 border-l-4 border-l-indigo-500">
+//                     <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full"><Clock size={20} /></div>
+//                     <div>
+//                         <div className="text-2xl font-light text-[#1f1e1d]">45</div>
+//                         <div className="text-[10px] text-[#8c8b88] font-bold uppercase tracking-widest">Pending Requests</div>
+//                     </div>
+//                 </Card>
+//                 <Card className="p-6 flex items-center gap-4 border-l-4 border-l-emerald-500">
+//                     <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full"><Activity size={20} /></div>
+//                     <div>
+//                         <div className="text-2xl font-light text-[#1f1e1d]">24 Gwei</div>
+//                         <div className="text-[10px] text-[#8c8b88] font-bold uppercase tracking-widest">Current Gas Price</div>
+//                     </div>
+//                 </Card>
+//                 <Card className={`p-6 flex items-center gap-4 border-l-4 ${isPaused ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
+//                     <div className={`p-3 rounded-full ${isPaused ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+//                         <Cpu size={20} />
+//                     </div>
+//                     <div>
+//                         <div className="text-2xl font-light text-[#1f1e1d]">{isPaused ? 'Paused' : 'Active'}</div>
+//                         <div className="text-[10px] text-[#8c8b88] font-bold uppercase tracking-widest">Scheduler Status</div>
+//                     </div>
+//                 </Card>
+//              </div>
+
+//              <SectionHeader title="Batch Queue" action={<div className="flex gap-3">
+//                  <button 
+//                     onClick={() => {
+//                         setIsPaused(!isPaused);
+//                         setToast(isPaused ? "Scheduler resumed" : "Scheduler paused");
+//                     }}
+//                     className={btnSecondary}
+//                 >
+//                     {isPaused ? "Resume Queue" : "Pause Queue"}
+//                  </button>
+//                  <button onClick={() => setToast("Batch scheduled for immediate execution")} className={btnPrimary}>Force Run Batch</button>
+//              </div>} />
+
+//              <Card className="overflow-hidden">
+//                   <table className="w-full text-left text-sm">
+//                       <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
+//                           <tr>
+//                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Batch ID</th>
+//                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Request Count</th>
+//                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Est. Cost</th>
+//                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Created</th>
+//                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
+//                               <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Action</th>
+//                           </tr>
+//                       </thead>
+//                       <tbody className="divide-y divide-[#f1f0ee]">
+//                           {[
+//                               { id: 'batch-3012', count: 450, cost: '0.04 SOL', time: '2m ago', status: Status.PENDING },
+//                               { id: 'batch-3011', count: 120, cost: '0.01 SOL', time: '15m ago', status: Status.PROCESSING },
+//                               { id: 'batch-3010', count: 500, cost: '0.05 SOL', time: '45m ago', status: Status.SUBMITTED },
+//                               { id: 'batch-3009', count: 488, cost: '0.04 SOL', time: '1h ago', status: Status.OK },
+//                           ].map((batch) => (
+//                               <tr key={batch.id} className="hover:bg-[#fcfbf9]">
+//                                   <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">{batch.id}</td>
+//                                   <td className="px-6 py-4 text-[#1f1e1d] font-medium">{batch.count}</td>
+//                                   <td className="px-6 py-4 text-[#5d5c58]">{batch.cost}</td>
+//                                   <td className="px-6 py-4 text-[#5d5c58]">{batch.time}</td>
+//                                   <td className="px-6 py-4"><Badge status={batch.status} size="sm" /></td>
+//                                   <td className="px-6 py-4 text-right">
+//                                       <button onClick={() => setToast(`Inspecting ${batch.id}`)} className="text-[#8c8b88] hover:text-[#BE3F2F] transition-colors"><ArrowRight size={16} className="ml-auto" /></button>
+//                                   </td>
+//                               </tr>
+//                           ))}
+//                       </tbody>
+//                   </table>
+//              </Card>
+//              <Toast message={toast} onClose={() => setToast(null)} />
+//         </div>
+//     );
+// };
 
 export const Analytics = () => {
     const [toast, setToast] = useState<string | null>(null);

@@ -12,8 +12,17 @@ import { Login, Signup } from './components/Auth';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  // Global keyboard shortcut for search (Cmd/Ctrl + K)
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      setIsAuthenticated(true);
+    }
+    setIsInitializing(false); 
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -26,14 +35,24 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#fcfbf9]">
+          <span className="text-sm text-[#5d5c58]">Verifying session...</span>
+      </div>
+    );
+  }
+
   return (
     <HashRouter>
       <Routes>
-        <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />
-        <Route path="/signup" element={<Signup onLogin={() => setIsAuthenticated(true)} />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={() => setIsAuthenticated(true)} />} />
+        <Route path="/signup" element={isAuthenticated ? <Navigate to="/" replace /> : <Signup onLogin={() => setIsAuthenticated(true)} />} />
         
-        {/* Protected Routes */}
-        <Route path="/" element={isAuthenticated ? <Layout onLogout={() => setIsAuthenticated(false)} /> : <Navigate to="/login" replace />}>
+        <Route path="/" element={isAuthenticated ? <Layout onLogout={() => {
+            localStorage.removeItem("access_token");
+            setIsAuthenticated(false);
+        }} /> : <Navigate to="/login" replace />}>
           <Route index element={<Dashboard />} />
           <Route path="anchors" element={<Anchors />} />
           <Route path="ingest" element={<Ingest />} />

@@ -8,9 +8,27 @@ service:
 imagePullSecrets:
   - name: ghcrpat
 env:
+  - name: HTTP_PORT
+    value: "4100"
+  - name: GROUP_ID
+    value: "anchoring-scheduler-group"
   - name: KAFKA_BROKERS
     value: "kafka-external:9092"
   - name: KAFKA_CLIENT_ID
     value: "anchoring-scheduler"
+  - name: ANCHORS_PREVIEW_TOPIC
+    value: "anchors.preview"
+  - name: ANCHORS_REQUEST_TOPIC
+    value: "anchors.request"
   - name: MINIO_ENDPOINT
     value: "minio"
+  - name: MINIO_PORT
+    value: "9000"
+  - name: MINIO_USE_SSL
+    value: "false"
+  - name: MINIO_ACCESS_KEY
+    value: "minioadmin"
+  - name: MINIO_SECRET_KEY
+    value: "minioadmin"
+  - name: MINIO_BUCKET
+    value: "ingest"
