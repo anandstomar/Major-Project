@@ -59,6 +59,7 @@ async function run() {
       
       try {
         const requestData = JSON.parse(rawValue);
+        console.log(`\n📥 Received message from Kafka topic ${requestTopic}:`, requestData);
         const requestId = requestData.request_id;
         const events = requestData.events || [];
         const merkleRoot = requestData.merkle_root || "0000000000000000000000000000000000000000000000000000000000000000";

@@ -3,6 +3,7 @@ import { Consumer, Producer } from "kafkajs";
 import { minio, ensureBucket } from "./minioClient";
 import { estimateGasForLeaves } from "./gasEstimator";
 import { Readable } from "stream";
+import * as crypto from "crypto";
 
 type Preview = {
   preview_id: string;
@@ -32,6 +33,23 @@ type Request = {
 const BUCKET = process.env.MINIO_BUCKET || "ingest";
 const PREVIEW_TOPIC = process.env.ANCHORS_PREVIEW_TOPIC || "anchors.preview";
 const REQUEST_TOPIC = process.env.ANCHORS_REQUEST_TOPIC || "anchors.request";
+
+function combineRoots(roots: string[]): string {
+  if (roots.length === 0) return "0".repeat(64);
+  if (roots.length === 1) return roots[0].replace(/^0x/, '');
+
+  let layer = roots.map(r => Buffer.from(r.replace(/^0x/, ''), 'hex'));
+  while (layer.length > 1) {
+    const next: Buffer[] = [];
+    for (let i = 0; i < layer.length; i += 2) {
+      const left = layer[i];
+      const right = i + 1 < layer.length ? layer[i + 1] : left;
+      next.push(crypto.createHash('sha256').update(Buffer.concat([left, right])).digest());
+    }
+    layer = next;
+  }
+  return layer[0].toString('hex');
+}
 
 export class AnchoringScheduler {
   producer: Producer;
@@ -119,11 +137,12 @@ export class AnchoringScheduler {
     let currentLeaves = 0;
     let currentPreviewIds: string[] = [];
     let currentEvents: string[] = [];
+    let currentRoots: string[] = [];
     for (const p of previews) {
       if (currentLeaves + p.leaf_count > this.maxLeaves) {
         // finalize current
         if (currentPreviewIds.length > 0) {
-          this.createRequest(currentPreviewIds, currentEvents);
+          this.createRequest(currentPreviewIds, currentEvents, combineRoots(currentRoots));
           // reset
           currentLeaves = 0;
           currentPreviewIds = [];
@@ -132,12 +151,14 @@ export class AnchoringScheduler {
       }
       currentPreviewIds.push(p.preview_id);
       currentEvents.push(...p.events);
+      currentRoots.push(p.merkle_root);
       currentLeaves += p.leaf_count;
+      
 
       // if gas estimate would exceed limit, finalize as well
       const gasEstimate = estimateGasForLeaves(currentLeaves);
       if (gasEstimate >= this.maxGas) {
-        this.createRequest(currentPreviewIds, currentEvents);
+        this.createRequest(currentPreviewIds, currentEvents, combineRoots(currentRoots));
         currentLeaves = 0;
         currentPreviewIds = [];
         currentEvents = [];
@@ -146,17 +167,17 @@ export class AnchoringScheduler {
 
     if (currentPreviewIds.length > 0) {
       // create last request (can be pending approval)
-      this.createRequest(currentPreviewIds, currentEvents);
+      this.createRequest(currentPreviewIds, currentEvents,combineRoots(currentRoots));
     }
   }
 
-  async createRequest(previewIds: string[], events: string[]) {
+  async createRequest(previewIds: string[], events: string[], merkleRoot: string) {
     // remove previews from pendingPreviews
     previewIds.forEach((id) => this.pendingPreviews.delete(id));
 
     const request: Request = {
       request_id: `req-${uuidv4()}`,
-      merkle_root: "", // merkle_root computed from previews; for now set empty or first preview root concat; better: derive in anchor service.
+      merkle_root: merkleRoot, 
       preview_ids: previewIds,
       events,
       estimated_gas: estimateGasForLeaves(events.length),
