@@ -27,27 +27,53 @@ export class AnchorsService {
   // }
 
  async findByRequestId(requestId: string) {
-    // 1. Fetch the Anchor record (Metadata only)
+    // 1. Fetch the Anchor record (Metadata) from Postgres
     const anchor = await this.prisma.anchor.findUnique({
       where: { requestId },
     });
 
     if (!anchor) return null;
+
+    // 2. Extract the Ingest Event IDs from the database record
+    let eventIds: string[] = [];
+    try {
+      if (anchor.eventsJson) {
+        // Handle parsing in case Prisma returns it as a string
+        eventIds = typeof anchor.eventsJson === 'string' 
+          ? JSON.parse(anchor.eventsJson) 
+          : anchor.eventsJson;
+      }
+    } catch (e) {
+      this.logger.error(`Failed to parse eventsJson for ${requestId}`);
+    }
+
+    // 3. Hydrate the raw payloads from MinIO using the INGEST IDs
+    const hydratedEvents = await Promise.all(
+      eventIds.map(async (eventId) => {
         try {
-           //  Fetch the raw JSON that the ingest-service just saved!
-           const stream = await this.minioClient.getObject('ingest', `raw/${requestId}.json`);
+           //  Fetch using the individual Ingest Event ID!
+           const stream = await this.minioClient.getObject('ingest', `raw/${eventId}.json`);
            
-           let data = '';
+           let rawData = '';
            for await (const chunk of stream) {
-             data += chunk.toString();
+             rawData += chunk.toString();
            }
-           return JSON.parse(data); // Returns the actual {"events": [...]} object!
            
+           return JSON.parse(rawData);
         } catch (err) {
            const errorMessage = err instanceof Error ? err.message : String(err);
-           this.logger.error(`Failed to fetch raw event ${requestId} from MinIO: ${errorMessage}`);
-           return { eventId: requestId, error: "Payload missing in MinIO" };
+           this.logger.error(`Failed to fetch raw event ${eventId}: ${errorMessage}`);
+           // Fallback for this specific event if it's missing
+           return { eventId: eventId, error: "Raw payload missing in MinIO" };
         }
+      })
+    );
+
+    // 4. Return the FULL Anchor object with the newly hydrated events
+    return {
+      ...anchor,
+      eventsJson: hydratedEvents 
+    };
   }
 
 
