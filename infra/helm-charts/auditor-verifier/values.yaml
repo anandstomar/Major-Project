@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/auditor-verifier
-  tag: bff12948f42ee9a646863f31a7bf8fdcb6797331
+  tag: 9aad630f4ff30ef2ad8ebb904751a4fcc45c9614
   pullPolicy: Always
 service:
   type: ClusterIP
