@@ -38,9 +38,11 @@ function combineRoots(roots: string[]): string {
   if (roots.length === 0) return "0".repeat(64);
   if (roots.length === 1) return roots[0].replace(/^0x/, '');
 
-  let layer = roots.map(r => Buffer.from(r.replace(/^0x/, ''), 'hex'));
+  // Relax the TS typing here to avoid the ArrayBufferLike mismatch
+  let layer: any[] = roots.map(r => Buffer.from(r.replace(/^0x/, ''), 'hex'));
+  
   while (layer.length > 1) {
-    const next: Buffer[] = [];
+    const next: any[] = [];
     for (let i = 0; i < layer.length; i += 2) {
       const left = layer[i];
       const right = i + 1 < layer.length ? layer[i + 1] : left;
