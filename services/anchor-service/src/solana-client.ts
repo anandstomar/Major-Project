@@ -25,7 +25,7 @@ export class SolanaClient {
 
   private getSolanaId(requestId: string): string {
     let formatted = requestId.replace(/^req-/, '').replace(/-/g, '');
-    if (formatted.length > 32) formatted = formatted.slice(0, 32);
+    if (formatted.length > 16) formatted = formatted.slice(0, 16);
     return formatted;
   }
 
