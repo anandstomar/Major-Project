@@ -4,7 +4,7 @@ image:
   pullPolicy: Always
 service:
   type: ClusterIP
-  port: 8084
+  port: 4100
 imagePullSecrets:
   - name: ghcrpat
 env:
