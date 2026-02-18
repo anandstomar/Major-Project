@@ -84,40 +84,6 @@ app.get("/api/v1/ingest/health", (_, res) => res.json({ ok: true, status: "healt
 app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
   const payload = req.body;
   
-  // Basic validation based on your UI's submitData
-  if (!payload.events) {
-      return res.status(400).json({ message: 'events payload required' });
-  }
-
-  const requestId = "req-" + randomUUID();
-  const timestamp = new Date().toISOString();
-
-  const kafkaMessage = {
-    event_id: requestId,
-    type: "direct_json_anchor",
-    actor: req.user.preferred_username || "system", // Extracted from JWT!
-    payload: payload,
-    timestamp,
-  };
-
-  try {
-    await producer.send({
-      topic: KAFKA_TOPIC,
-      messages: [{ key: requestId, value: JSON.stringify(kafkaMessage) }],
-    });
-
-    console.log(`[JSON INGEST] Published ${requestId} to Kafka`);
-    res.status(202).json({ requestId, status: 'received', message: "Queued for processing" });
-  } catch (err) {
-    console.error("Kafka error:", err);
-    res.status(500).json({ error: "Failed to queue message" });
-  }
-});
-
-// Route 1: Direct JSON Payload (For the "Submit Anchor" modal in the UI)
-app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
-  const payload = req.body;
-  
   if (!payload.events) {
       return res.status(400).json({ message: 'events payload required' });
   }
