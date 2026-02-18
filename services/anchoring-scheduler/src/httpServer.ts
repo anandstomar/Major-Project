@@ -8,13 +8,19 @@ export function createHttpServer(scheduler: AnchoringScheduler) {
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-  // list pending requests
-  app.get("/requests", (_req, res) => {
+  const apiRouter = express.Router();
+
+  apiRouter.get("/requests", (_req, res) => {
     res.json({ requests: scheduler.listPendingRequests() });
   });
 
+  // // list pending requests
+  // app.get("/requests", (_req, res) => {
+  //   res.json({ requests: scheduler.listPendingRequests() });
+  // });
+
   // approve request
-  app.post("/approve/:requestId", async (req, res) => {
+  apiRouter.post("/approve/:requestId", async (req, res) => {
     const requestId = req.params.requestId;
     const approver = req.body.approver || req.headers["x-user"] || "ops";
     try {
@@ -27,6 +33,9 @@ export function createHttpServer(scheduler: AnchoringScheduler) {
       res.status(500).json({ ok: false, error: "internal" });
     }
   });
+
+  app.use("/", apiRouter);
+  app.use("/api/v1/scheduler", apiRouter);
 
   return app;
 }

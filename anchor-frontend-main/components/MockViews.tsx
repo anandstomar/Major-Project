@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  UploadCloud, List, Code, PlayCircle, FolderTree, Database, 
+  UploadCloud, List, Code, PlayCircle, PauseCircle, FolderTree, Database, 
   Search as SearchIcon, Bell, Settings as SettingsIcon, Shield, Key, User,
   FileJson, Clock, RefreshCw, FileText, Activity, Cpu, Trash2, Plus, ArrowRight, Copy,
-  CheckCircle, AlertCircle
+  CheckCircle, XCircle, AlertCircle
 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Status } from '../types';

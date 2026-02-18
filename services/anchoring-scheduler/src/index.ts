@@ -13,7 +13,7 @@ async function main() {
   const scheduler = new AnchoringScheduler(producer, consumer);
   await scheduler.start();
 
-  const app = createHttpServer(scheduler);
+  const  app = createHttpServer(scheduler);
   const port = parseInt(process.env.HTTP_PORT || "4100", 10);
   app.listen(port, () => {
     console.log(`Anchoring Scheduler HTTP listening on ${port}`);
