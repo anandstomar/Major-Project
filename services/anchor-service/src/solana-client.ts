@@ -41,7 +41,7 @@ export class SolanaClient {
       await this.program.account.anchorAccount.fetch(pda);
       return pda;
     } catch {
-      const tx = await this.program.rpc.initAnchor(requestId, {
+      const tx = await this.program.rpc.initAnchor(solanaId, {
         accounts: {
           anchorAccount: pda,
           submitter: this.provider.wallet.publicKey,
