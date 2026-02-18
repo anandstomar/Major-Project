@@ -33,37 +33,21 @@ export class AnchorsService {
     });
 
     if (!anchor) return null;
-
-    // 2. Fetch the actual Batch File from MinIO!
-    try {
-      // NOTE: If you found the file in the 'requests' folder instead of 'completed', 
-      // change the path below to `requests/${requestId}.json`
-      const stream = await this.minioClient.getObject('ingest', `completed/${requestId}.json`);
-      
-      let data = '';
-      for await (const chunk of stream) {
-        data += chunk.toString();
-      }
-      
-      const minioBatchData = JSON.parse(data);
-
-      // 3. Return the merged object
-      return {
-        ...anchor,
-        // Override the database eventsJson with the exact array found in the MinIO file
-        eventsJson: minioBatchData.events 
-      };
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Failed to fetch ${requestId}.json from MinIO: ${errorMessage}`);
-      
-      // Fallback: If MinIO fails, gracefully return the IDs stored in Postgres
-      return {
-         ...anchor,
-         eventsJson: anchor.eventsJson ? JSON.parse(anchor.eventsJson) : []
-      };
-    }
+        try {
+           //  Fetch the raw JSON that the ingest-service just saved!
+           const stream = await this.minioClient.getObject('ingest', `raw/${requestId}.json`);
+           
+           let data = '';
+           for await (const chunk of stream) {
+             data += chunk.toString();
+           }
+           return JSON.parse(data); // Returns the actual {"events": [...]} object!
+           
+        } catch (err) {
+           const errorMessage = err instanceof Error ? err.message : String(err);
+           this.logger.error(`Failed to fetch raw event ${requestId} from MinIO: ${errorMessage}`);
+           return { eventId: requestId, error: "Payload missing in MinIO" };
+        }
   }
 
 

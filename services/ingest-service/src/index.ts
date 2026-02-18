@@ -114,59 +114,51 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
   }
 });
 
-// Route 2: File Upload (For the "Upload Manifest" tab in the UI)
-app.post("/api/v1/ingest/upload", authMiddleware, upload.single("file"), async (req: any, res: any) => {
-  const file = req.file;
-  const eventType = req.body?.type || "manifest_upload";
+// Route 1: Direct JSON Payload (For the "Submit Anchor" modal in the UI)
+app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
+  const payload = req.body;
+  
+  if (!payload.events) {
+      return res.status(400).json({ message: 'events payload required' });
+  }
 
-  if (!file) return res.status(400).json({ error: "Missing file" });
+  const requestId = "req-" + randomUUID();
+  const timestamp = new Date().toISOString();
+
+  // Save the raw JSON payload to MinIO before sending to Kafka!
+  try {
+    const buffer = Buffer.from(JSON.stringify(payload, null, 2));
+    const minioKey = `raw/${requestId}.json`;
+    
+    await minioClient.putObject(MINIO_BUCKET, minioKey, buffer, buffer.length, {
+      'Content-Type': 'application/json'
+    });
+    console.log(`[JSON INGEST] Saved raw payload to MinIO: ${minioKey}`);
+  } catch (err) {
+    console.error("Failed to save raw payload to MinIO:", err);
+    return res.status(500).json({ error: "Storage failure" });
+  }
+
+  // Now just send the metadata to Kafka (keeping the payload small!)
+  const kafkaMessage = {
+    event_id: requestId,
+    type: "direct_json_anchor",
+    actor: req.user.preferred_username || "system",
+    payload: payload, 
+    timestamp,
+  };
 
   try {
-    const event_id = "evt-" + randomUUID();
-    const batch_id = "batch-" + randomUUID();
-    const timestamp = new Date().toISOString();
-    const filename = file.originalname;
-    const buffer = file.buffer;
-    const content_size = buffer.length;
-    const hash = crypto.createHash("sha256").update(buffer).digest("hex");
-
-    // 1. MinIO
-    const minioKey = `${event_id}/${filename}`;
-    await minioClient.putObject(MINIO_BUCKET, minioKey, buffer, content_size, {
-        'Content-Type': file.mimetype
-    });
-    console.log(`[FILE INGEST] Saved to MinIO: ${minioKey}`);
-
-    // 2. IPFS
-    const ipfsResult = await ipfs.add(buffer, { pin: true });
-    const data_cid = ipfsResult.cid.toString();
-    console.log(`[FILE INGEST] Pinned to IPFS: ${data_cid}`);
-
-    const event = {
-      event_id,
-      batch_id,
-      type: eventType,
-      actor: req.user.preferred_username, // Extracted from JWT!
-      filename,
-      minio_key: minioKey,
-      data_cid,
-      data_hash: `sha256:${hash}`,
-      content_size,
-      mimetype: file.mimetype,
-      timestamp,
-    };
-
-    // 3. Kafka
     await producer.send({
       topic: KAFKA_TOPIC,
-      messages: [{ key: event_id, value: JSON.stringify(event) }],
+      messages: [{ key: requestId, value: JSON.stringify(kafkaMessage) }],
     });
 
-    return res.status(202).json({ success: true, event_id, data_cid, minio_key: minioKey });
-
+    console.log(`[JSON INGEST] Published ${requestId} to Kafka`);
+    res.status(202).json({ requestId, status: 'received', message: "Queued for processing" });
   } catch (err) {
-    console.error("Upload process failed:", err);
-    return res.status(500).json({ error: "internal_error" });
+    console.error("Kafka error:", err);
+    res.status(500).json({ error: "Failed to queue message" });
   }
 });
 
