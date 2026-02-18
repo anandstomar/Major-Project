@@ -14,3 +14,9 @@ env:
   SOLANA_FEE_PAYER_SECRET: "dev-fee-payer" # k8s secret name containing fee payer key
   KAFKA_BROKERS: "kafka-external:9092"
   DATABASE_URL: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
+  MINIO_ENDPOINT: "minio"
+  MINIO_PORT: "9000"
+  MINIO_USE_SSL: "false"
+  MINIO_ACCESS_KEY: "minioadmin"
+  MINIO_SECRET_KEY: "minioadmin"
+  MINIO_BUCKET: "ingest"
