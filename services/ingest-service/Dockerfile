@@ -9,6 +9,9 @@ COPY package.json package-lock.json* ./
 # We use 'npm install' instead of 'npm ci --production' so we get the 'tsc' compiler
 RUN npm install
 
+COPY prisma ./prisma
+RUN npx prisma generate
+
 # 3. Copy source code
 COPY . .
 

@@ -63,9 +63,19 @@ export const Anchors: React.FC = () => {
       setAnchors(data.items || []);
 
       // Keep the side drawer updated if a transaction finishes!
-      if (selectedAnchor) {
+    //   if (selectedAnchor) {
+    //      const updatedSelected = (data.items || []).find((a: any) => a.requestId === selectedAnchor.requestId);
+    //      if (updatedSelected) setSelectedAnchor(updatedSelected);
+    //   }
+    if (selectedAnchor) {
          const updatedSelected = (data.items || []).find((a: any) => a.requestId === selectedAnchor.requestId);
-         if (updatedSelected) setSelectedAnchor(updatedSelected);
+         if (updatedSelected) {
+             // Update status and blockchain info, but PROTECT our hydrated JSON!
+             setSelectedAnchor((prev: any) => ({
+                 ...updatedSelected,
+                 eventsJson: prev?.eventsJson || updatedSelected.eventsJson
+             }));
+         }
       }
       
     } catch (err: any) {
@@ -95,6 +105,30 @@ export const Anchors: React.FC = () => {
   useEffect(() => {
     fetchAnchors();
   }, []);
+
+  const handleSelectAnchor = async (anchor: any) => {
+      // 1. Set shallow data immediately for a snappy UI
+      setSelectedAnchor(anchor); 
+      
+      try {
+          const token = localStorage.getItem("access_token");
+          if (!token) return;
+
+          // 2. Fetch the deep, hydrated data from MinIO!
+          const response = await fetchWithRetry(`/query/anchors/${anchor.requestId}`, {
+              method: "GET",
+              headers: { "Authorization": `Bearer ${token}` }
+          });
+          
+          const data = await response.json();
+          if (data.item) {
+              // 3. Overwrite the drawer with the fully populated JSON payload
+              setSelectedAnchor(data.item); 
+          }
+      } catch (err) {
+          console.error("Failed to fetch deep anchor data", err);
+      }
+  };
 
   const handleRefresh = () => {
     fetchAnchors();
@@ -155,14 +189,36 @@ export const Anchors: React.FC = () => {
       }
   };
 
-  // Helper to safely parse eventsJson from Prisma
-  const getParsedEvents = (eventsJson?: string) => {
-    if (!eventsJson) return [];
-    try {
-      return JSON.parse(eventsJson);
-    } catch {
-      return [];
+
+const getParsedEvents = (data?: any) => {
+    console.log("Parsing eventsJson:", data);
+    if (!data) return [];
+    
+    // 1. If the backend already hydrated it into an array (The New Way!)
+    if (Array.isArray(data)) {
+      // We map over it to beautifully expand any nested JSON strings
+      return data.map(item => {
+          if (item && typeof item.events === 'string') {
+              try {
+                  return { ...item, events: JSON.parse(item.events) };
+              } catch {
+                  return item;
+              }
+          }
+          return item;
+      });
     }
+    
+    // 2. If it's still a raw string from Postgres (Fallback)
+    // if (typeof data === 'string') {
+    //   try {
+    //     return JSON.parse(data);
+    //   } catch {
+    //     return [];
+    //   }
+    // }
+    
+    return [];
   };
 
   const handleReVerify = async () => {
@@ -182,7 +238,9 @@ export const Anchors: React.FC = () => {
                   "Content-Type": "application/json",
                   "Authorization": `Bearer ${token}` 
               },
-              body: selectedAnchor.eventsJson 
+              body: typeof selectedAnchor.eventsJson === 'string' 
+                      ? selectedAnchor.eventsJson 
+                      : JSON.stringify(selectedAnchor.eventsJson) 
           });
           
           if (!response.ok) throw new Error("Validation service unavailable");
@@ -277,7 +335,7 @@ export const Anchors: React.FC = () => {
                             ) : anchors.map((anchor) => (
                                 <tr 
                                     key={anchor.requestId} 
-                                    onClick={() => setSelectedAnchor(anchor)}
+                                    onClick={() => handleSelectAnchor(anchor)}
                                     className={`group border-b border-[#f1f0ee] last:border-0 cursor-pointer transition-all duration-200 ease-in-out relative
                                         ${selectedAnchor?.requestId === anchor.requestId 
                                             ? 'bg-[#f4f2f0] border-l-4 border-l-[#BE3F2F]' 
@@ -337,33 +395,54 @@ export const Anchors: React.FC = () => {
                                     <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white ${selectedAnchor.merkleRoot ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                                     <p className="text-sm font-medium">Validated</p>
                                 </div>
+                            
                                 <div className="relative pl-4">
-                                    <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white ${selectedAnchor.status === 'FAILED' ? 'bg-red-500' : selectedAnchor.status === 'OK' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                                    <p className="text-sm font-medium">Anchored on Chain</p>
+                                <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white ${selectedAnchor.status === 'FAILED' ? 'bg-red-500' : selectedAnchor.status === 'OK' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                                <p className="text-sm font-medium">Anchored on Chain</p>
+    
                                     {selectedAnchor.txHash && (
-                                        <a href="#" className="flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1">
-                                            {selectedAnchor.txHash} <ExternalLink size={10} />
-                                        </a>
-                                    )}
-                                </div>
+                                <a 
+                                href={`https://explorer.solana.com/tx/${selectedAnchor.txHash}?cluster=devnet`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="flex items-start gap-1 text-xs text-blue-600 hover:underline mt-1 break-all pr-4"
+                                >
+                                {selectedAnchor.txHash} 
+                                <ExternalLink size={12} className="flex-shrink-0 mt-0.5" />
+                                </a>
+                                )}
                             </div>
-                        </div>
+                            </div>
+                       </div>
 
-                        {/* Metadata */}
+                       
                         <div>
                             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Metadata</h4>
                             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Submitter</span>
-                                    <span className="font-medium text-gray-900">{selectedAnchor.submitter || 'system'}</span>
+                                    <span className="font-medium text-gray-900">
+                                        {/* Look for the submitter inside the parsed JSON first, fallback to the DB submitter */}
+                                        {getParsedEvents(selectedAnchor.eventsJson).length > 0 && getParsedEvents(selectedAnchor.eventsJson)[0].submitter 
+                                            ? getParsedEvents(selectedAnchor.eventsJson)[0].submitter 
+                                            : selectedAnchor.submitter || 'system'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Block Number</span>
-                                    <span className="font-medium text-gray-900">{selectedAnchor.blockNumber || '---'}</span>
+                                    <span className="font-medium text-gray-900">
+                                        {selectedAnchor.blockNumber || 'Pending Confirmation'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Event Count</span>
-                                    <span className="font-medium text-gray-900">{getParsedEvents(selectedAnchor.eventsJson).length}</span>
+                                    <span className="font-medium text-gray-900">
+                                        {/* Dynamically count the items INSIDE the nested events array */}
+                                        {getParsedEvents(selectedAnchor.eventsJson).reduce((total: number, item: any) => {
+                                            if (item && Array.isArray(item.events)) return total + item.events.length;
+                                            return total + 1;
+                                        }, 0)}
+                                    </span>
                                 </div>
                             </div>
                         </div>

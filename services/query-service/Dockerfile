@@ -9,6 +9,9 @@ COPY package*.json ./
 # We need these to compile the TypeScript code
 RUN npm install
 
+COPY prisma ./prisma
+RUN npx prisma generate
+
 COPY . .
 
 # 1. Generate Prisma Client

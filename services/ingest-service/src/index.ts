@@ -9,6 +9,13 @@ import crypto from "crypto";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
+import { PrismaClient } from '@prisma/client';
+
+// Initialize Prisma
+const prisma = new PrismaClient();
+
+// ---- Infrastructure Clients ----
+// (Keep your existing Minio, IPFS, and Kafka clients here)
 
 dotenv.config();
 
@@ -78,7 +85,42 @@ const upload = multer({
 // ---- Routes ----
 
 // Health Check
-app.get("/api/v1/ingest/health", (_, res) => res.json({ ok: true, status: "healthy" }));
+app.get("/api/v1/ingest/health", (_, res) => res.json({ ok: true, status: "healthy" }));0
+
+// Route 2: Fetch Ingestion History (For the React UI Tables)
+app.get("/api/v1/ingest/jobs", authMiddleware, async (req: any, res: any) => {
+  try {
+    // Fetch the 50 most recent uploads using Prisma
+    const items = await prisma.ingestJob.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    
+    // Because of Prisma's @map, 'items' is already perfectly formatted for React!
+    res.status(200).json({ items, total: items.length });
+  } catch (err) {
+    console.error("Prisma error fetching ingest jobs:", err);
+    res.status(500).json({ error: "Failed to fetch ingestion history" });
+  }
+});
+
+// Route 2: Fetch Ingestion History (For the React UI Tables)
+app.get("/api/v1/ingest/history", authMiddleware, async (req: any, res: any) => {
+  try {
+    // Fetch the 50 most recent uploads using Prisma
+    const items = await prisma.ingestJob.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    
+    // Return the exact same JSON structure we planned in NestJS
+    res.status(200).json({ items, total: items.length });
+    
+  } catch (err) {
+    console.error("Prisma error fetching ingest history:", err);
+    res.status(500).json({ error: "Failed to fetch ingestion history" });
+  }
+});
 
 // Route 1: Direct JSON Payload (For the "Submit Anchor" modal in the UI)
 app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
@@ -90,11 +132,13 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
 
   const requestId = "req-" + randomUUID();
   const timestamp = new Date().toISOString();
+  let buffer: Buffer;
+  let minioKey: string;
 
   // Save the raw JSON payload to MinIO before sending to Kafka!
   try {
-    const buffer = Buffer.from(JSON.stringify(payload, null, 2));
-    const minioKey = `raw/${requestId}.json`;
+    buffer = Buffer.from(JSON.stringify(payload, null, 2));
+    minioKey = `raw/${requestId}.json`;
     
     await minioClient.putObject(MINIO_BUCKET, minioKey, buffer, buffer.length, {
       'Content-Type': 'application/json'
@@ -122,6 +166,24 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
 
     console.log(`[JSON INGEST] Published ${requestId} to Kafka`);
     res.status(202).json({ requestId, status: 'received', message: "Queued for processing" });
+
+    try {
+    await prisma.ingestJob.create({
+      data: {
+        jobId: requestId,
+        filename: "Direct JSON Payload", // Update this dynamically if using multer for file uploads!
+        fileSize: buffer.length,
+        mimetype: "application/json",
+        submitter: req.user.preferred_username || "system",
+        minioKey: minioKey,
+        status: "OK", 
+        rows: payload.events ? payload.events.length : 0,
+      }
+    });
+      console.log(`[JSON INGEST] Logged job ${requestId} to PostgreSQL`);
+    } catch (dbErr) {
+       console.error("Failed to log ingest job to DB:", dbErr);
+    }
   } catch (err) {
     console.error("Kafka error:", err);
     res.status(500).json({ error: "Failed to queue message" });

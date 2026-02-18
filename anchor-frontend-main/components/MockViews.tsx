@@ -659,6 +659,66 @@ export const Scheduler = () => {
     const [requests, setRequests] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [networkFee, setNetworkFee] = useState<string>("Loading...");
+
+    useEffect(() => {
+    const fetchSolanaFee = async () => {
+      try {
+        // 1. Fetch recent priority fees from Solana Devnet
+        const response = await fetch("https://api.devnet.solana.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "getRecentPrioritizationFees",
+            params: [[]]
+          })
+        });
+        
+        const data = await response.json(); 
+        
+        if (data.result && data.result.length > 0) {
+          // 2. Extract non-zero priority fees (returned in micro-lamports per CU)
+          const fees = data.result.map((f: any) => f.prioritizationFee);
+          const nonZeroFees = fees.filter((f: number) => f > 0);
+
+          console.log("nonZeroFees", nonZeroFees);
+          
+          let avgMicroLamportsPerCU = 0;
+          if (nonZeroFees.length > 0) {
+              const sum = nonZeroFees.reduce((a: number, b: number) => a + b, 0);
+              avgMicroLamportsPerCU = sum / nonZeroFees.length;
+          }
+
+          // 3. Calculate total estimated fee
+          // Solana Base Fee is ALWAYS 5,000 Lamports
+          const baseFee = 5000; 
+          
+          // Assume ~10,000 CUs for a standard Anchor submission
+          const estimatedPriorityLamports = Math.round((avgMicroLamportsPerCU * 10000) / 1000000);
+          console.log("estimatedPriorityLamports", estimatedPriorityLamports)
+          const totalFeeLamports = baseFee + estimatedPriorityLamports;
+
+          console.log("totalFeeLamport",totalFeeLamports)
+          
+          setNetworkFee(`${totalFeeLamports.toLocaleString()} Lamports`);
+        } else {
+          setNetworkFee("5,000 Lamports"); // Fallback to standard base fee
+        }
+      } catch (err) {
+        console.error("Failed to fetch Solana fees:", err);
+        setNetworkFee("5,000 Lamports"); 
+      }
+    };
+
+    fetchSolanaFee();
+    
+    // Refresh the fee every 15 seconds!
+    const interval = setInterval(fetchSolanaFee, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
     // 1. Fetch real pending requests from the Node.js Scheduler API
     const fetchRequests = async () => {
         try {
@@ -731,7 +791,7 @@ export const Scheduler = () => {
                 <Card className="p-6 flex items-center gap-4 border-l-4 border-l-emerald-500">
                     <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full"><Activity size={20} /></div>
                     <div>
-                        <div className="text-2xl font-light text-[#1f1e1d]">24 Gwei</div>
+                        <div className="text-2xl font-light text-[#1f1e1d]">{networkFee}</div>
                         <div className="text-[10px] text-[#8c8b88] font-bold uppercase tracking-widest">Current Gas Price</div>
                     </div>
                 </Card>
