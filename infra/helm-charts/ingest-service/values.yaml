@@ -24,3 +24,5 @@ env:
     value: "minioadmin"
   - name: IPFS_API_URL
     value: "http://ipfs:5001"
+  - name: DATABASE_URL
+    value: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
