@@ -18,7 +18,8 @@
     "crypto": "^1.0.1",
     "dotenv": "^17.3.1",
     "express": "^4.18.2",
-    "kafkajs": "^2.2.4"
+    "kafkajs": "^2.2.4",
+    "minio": "^8.0.6"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
