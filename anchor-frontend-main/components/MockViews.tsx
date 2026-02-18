@@ -68,61 +68,138 @@ const formInputClass = "w-full bg-[#fcfbf9] border border-[#d6d3d0] rounded px-3
 const btnPrimary = "px-4 py-2 bg-[#BE3F2F] text-white text-sm font-medium rounded shadow-sm hover:bg-[#a33224] transition-colors";
 const btnSecondary = "px-4 py-2 bg-white border border-[#d6d3d0] text-[#5d5c58] text-sm font-medium rounded hover:bg-[#fbfbfa] transition-colors";
 
-// --- Page Implementations ---
-
 export const Ingest = () => {
   const [toast, setToast] = useState<string | null>(null);
   
-  const [uploads, setUploads] = useState([
-    { name: 'user_events_2023_10_24.json', size: '24 MB', time: '10 mins ago', user: 'jdoe', status: 'Complete' },
-    { name: 'tx_logs_v2.avro', size: '156 MB', time: '1 hour ago', user: 'system', status: 'Processing' },
-    { name: 'legacy_import.csv', size: '4.2 MB', time: '3 hours ago', user: 'admin', status: 'Failed' },
-  ]);
+  // Real Database State
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = () => {
-    setToast("File 'upload_manifest_v2.json' added to queue");
-    setUploads(prev => [{
-        name: 'upload_manifest_v2.json',
-        size: '12 MB',
-        time: 'Just now',
-        user: 'you',
-        status: 'Processing'
-    }, ...prev]);
+  // Helper to format bytes to KB/MB
+  const formatBytes = (bytes: number) => {
+      if (!bytes || bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 1. Fetch real ingestion history from Express backend
+  const fetchJobs = async (silent = false) => {
+      try {
+          if (!silent) setIsLoading(true);
+          const token = localStorage.getItem("access_token");
+          if (!token) return;
+
+          // Hitting the new Prisma GET route we just built!
+          const response = await fetchWithRetry("/ingest/history", {
+              method: "GET",
+              headers: { "Authorization": `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+              const data = await response.json();
+              setJobs(data.items || []);
+          }
+      } catch (err) {
+          console.error("Failed to load ingest history", err);
+          if (!silent) setToast("Failed to load ingestion history");
+      } finally {
+          if (!silent) setIsLoading(false);
+      }
+  };
+
+  // Poll for updates every 5 seconds
+  useEffect(() => {
+      fetchJobs();
+      const interval = setInterval(() => fetchJobs(true), 5000);
+      return () => clearInterval(interval);
+  }, []);
+
+  // 2. Handle Real File Uploads (Phase 1)
+  const handleRealFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      setToast(`Uploading ${file.name}...`);
+
+      try {
+          const token = localStorage.getItem("access_token");
+          
+          // Use FormData for file uploads
+          const formData = new FormData();
+          formData.append("file", file);
+
+          // Assuming your Express service has a file upload route like /api/v1/ingest/upload
+          const response = await fetchWithRetry("/ingest/upload", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${token}` }, // Notice we DON'T set Content-Type for FormData!
+              body: formData
+          });
+
+          if (response.ok) {
+              setToast(`✅ Successfully uploaded ${file.name}`);
+              fetchJobs(true); // Refresh the table immediately
+          } else {
+              const errData = await response.json();
+              setToast(`❌ Upload failed: ${errData.error || 'Unknown error'}`);
+          }
+      } catch (err: any) {
+          setToast(`❌ Network error: ${err.message}`);
+      } finally {
+          setIsUploading(false);
+          // Reset the input so the user can upload the same file again if needed
+          e.target.value = ''; 
+      }
   };
 
   const UploadTab = () => (
       <div className="max-w-5xl mx-auto space-y-10">
-          <div 
-            onClick={handleFileUpload}
-            className="border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all cursor-pointer group"
-          >
-              <div className="mb-6 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all">
+          <div className="relative border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all group">
+              {/* Hidden file input layered over the box */}
+              <input 
+                  type="file" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                  onChange={handleRealFileUpload}
+                  disabled={isUploading}
+                  accept=".json,.csv,.avro"
+              />
+              
+              <div className={`mb-6 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all ${isUploading ? 'animate-pulse' : ''}`}>
                   <IllusUpload />
               </div>
-              <h3 className="text-xl font-medium text-[#1f1e1d]">Upload Manifest</h3>
+              <h3 className="text-xl font-medium text-[#1f1e1d]">
+                  {isUploading ? 'Uploading...' : 'Upload Manifest'}
+              </h3>
               <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Drag and drop JSON, AVRO, or CSV files here to start an ingestion job. Max size 500MB.</p>
-              <button className={`mt-8 ${btnPrimary}`}>
-                  Select Files
+              <button className={`mt-8 ${btnPrimary} relative z-0`} disabled={isUploading}>
+                  {isUploading ? 'Processing...' : 'Select Files'}
               </button>
           </div>
           
           <div>
               <SectionHeader title="Recent Uploads" />
               <Card>
-                  {uploads.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between p-5 border-b border-[#f1f0ee] last:border-0 hover:bg-[#fcfbf9]   ">
+                  {jobs.length === 0 && !isLoading && (
+                      <div className="p-8 text-center text-gray-500 text-sm">No uploads found. Drag a file above to begin.</div>
+                  )}
+                  {/* Slicing to show only the top 5 most recent in this specific view */}
+                  {jobs.slice(0, 5).map((job) => (
+                      <div key={job.id} className="flex items-center justify-between p-5 border-b border-[#f1f0ee] last:border-0 hover:bg-[#fcfbf9]">
                           <div className="flex items-center gap-4">
                               <div className="p-2 bg-[#f4f2f0] rounded text-[#8c8b88]">
                                 <FileJson size={20} />
                               </div>
                               <div>
-                                  <p className="text-sm font-medium text-[#1f1e1d]">{file.name}</p>
-                                  <p className="text-xs text-[#8c8b88] mt-0.5">{file.size} • {file.user}</p>
+                                  <p className="text-sm font-medium text-[#1f1e1d]">{job.filename}</p>
+                                  <p className="text-xs text-[#8c8b88] mt-0.5">{formatBytes(job.fileSize)} • {job.submitter}</p>
                               </div>
                           </div>
                           <div className="flex items-center gap-6">
-                              <span className="text-xs text-[#8c8b88]">{file.time}</span>
-                              <Badge status={file.status === 'Complete' ? Status.OK : file.status === 'Processing' ? Status.PROCESSING : Status.FAILED} size="sm" />
+                              <span className="text-xs text-[#8c8b88]">{new Date(job.createdAt).toLocaleTimeString()}</span>
+                              <Badge status={job.status === 'OK' ? Status.OK : job.status === 'FAILED' ? Status.FAILED : Status.PROCESSING} size="sm" />
                           </div>
                       </div>
                   ))}
@@ -134,10 +211,10 @@ export const Ingest = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const handleRefreshJobs = () => {
       setIsRefreshing(true);
-      setTimeout(() => {
+      fetchJobs(true).then(() => {
           setIsRefreshing(false);
           setToast("Job statuses updated");
-      }, 800);
+      });
   };
 
   const JobsTab = () => (
@@ -145,12 +222,17 @@ export const Ingest = () => {
           <SectionHeader title="Ingestion Jobs" action={
               <button 
                 onClick={handleRefreshJobs} 
-                className={`text-[#BE3F2F] text-sm font-medium flex items-center gap-1 hover:underline ${isRefreshing ? 'opacity-50' : ''}`}
+                className={`text-[#BE3F2F] text-sm font-medium flex items-center gap-1 hover:underline ${isRefreshing || isLoading ? 'opacity-50' : ''}`}
               >
-                  <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> Refresh
+                  <RefreshCw size={14} className={isRefreshing || isLoading ? "animate-spin" : ""} /> Refresh
               </button>
           } />
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden min-h-[200px] relative">
+              {isLoading && jobs.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                      <span className="text-sm text-gray-500">Loading jobs from database...</span>
+                  </div>
+              )}
               <table className="w-full text-left text-sm">
                   <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
                       <tr>
@@ -163,24 +245,30 @@ export const Ingest = () => {
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f1f0ee]">
-                      {[
-                          { id: 'job-8821', manifest: 'analytics_dump_a.json', rows: '45,200', dur: '4m 12s', status: Status.OK },
-                          { id: 'job-8820', manifest: 'analytics_dump_b.json', rows: '12,500', dur: '1m 05s', status: Status.OK },
-                          { id: 'job-8819', manifest: 'broken_schema.avro', rows: '0', dur: '12s', status: Status.FAILED },
-                          { id: 'job-8818', manifest: 'stream_logs.csv', rows: '128,900', dur: 'Processing', status: Status.PROCESSING },
-                          { id: 'job-8817', manifest: 'daily_sync.json', rows: '8,400', dur: '45s', status: Status.OK },
-                      ].map((job) => (
+                      {jobs.map((job) => (
                           <tr key={job.id} className="hover:bg-[#fcfbf9] transition-colors">
-                              <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">{job.id}</td>
-                              <td className="px-6 py-4 text-[#1f1e1d] font-medium">{job.manifest}</td>
-                              <td className="px-6 py-4 text-[#5d5c58]">{job.rows}</td>
-                              <td className="px-6 py-4 text-[#5d5c58]">{job.dur}</td>
-                              <td className="px-6 py-4"><Badge status={job.status} size="sm" /></td>
+                              <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">
+                                  {/* Shorten the UUID for visual cleanliness */}
+                                  {job.jobId ? job.jobId.split('-')[0] : 'job-...'}
+                              </td>
+                              <td className="px-6 py-4 text-[#1f1e1d] font-medium">{job.filename}</td>
+                              <td className="px-6 py-4 text-[#5d5c58]">{job.rows?.toLocaleString() || 0}</td>
+                              <td className="px-6 py-4 text-[#5d5c58]">{job.duration || 'N/A'}</td>
+                              <td className="px-6 py-4">
+                                  <Badge status={job.status === 'OK' ? Status.OK : job.status === 'FAILED' ? Status.FAILED : Status.PROCESSING} size="sm" />
+                              </td>
                               <td className="px-6 py-4 text-right">
-                                <button onClick={() => setToast(`Opening logs for ${job.id}`)} className="text-[#BE3F2F] hover:text-[#a33224] cursor-pointer font-medium text-xs">View Logs</button>
+                                <button onClick={() => setToast(`Opening logs for ${job.jobId}`)} className="text-[#BE3F2F] hover:text-[#a33224] cursor-pointer font-medium text-xs">View Logs</button>
                               </td>
                           </tr>
                       ))}
+                      {jobs.length === 0 && !isLoading && (
+                          <tr>
+                              <td colSpan={6} className="text-center py-12 text-gray-400">
+                                  No ingestion jobs found.
+                              </td>
+                          </tr>
+                      )}
                   </tbody>
               </table>
           </Card>
@@ -287,6 +375,7 @@ export const Ingest = () => {
     { id: 'jobs', label: 'Ingest Jobs', icon: List, content: <JobsTab /> },
     { id: 'schema', label: 'Schema Registry', icon: Code, content: <SchemaTab /> },
   ];
+  
   return (
     <>
         <Tabs tabs={tabs} />
@@ -294,6 +383,231 @@ export const Ingest = () => {
     </>
   );
 };
+
+// export const Ingest = () => {
+//   const [toast, setToast] = useState<string | null>(null);
+  
+//   const [uploads, setUploads] = useState([
+//     { name: 'user_events_2023_10_24.json', size: '24 MB', time: '10 mins ago', user: 'jdoe', status: 'Complete' },
+//     { name: 'tx_logs_v2.avro', size: '156 MB', time: '1 hour ago', user: 'system', status: 'Processing' },
+//     { name: 'legacy_import.csv', size: '4.2 MB', time: '3 hours ago', user: 'admin', status: 'Failed' },
+//   ]);
+
+//   const handleFileUpload = () => {
+//     setToast("File 'upload_manifest_v2.json' added to queue");
+//     setUploads(prev => [{
+//         name: 'upload_manifest_v2.json',
+//         size: '12 MB',
+//         time: 'Just now',
+//         user: 'you',
+//         status: 'Processing'
+//     }, ...prev]);
+//   };
+
+//   const UploadTab = () => (
+//       <div className="max-w-5xl mx-auto space-y-10">
+//           <div 
+//             onClick={handleFileUpload}
+//             className="border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all cursor-pointer group"
+//           >
+//               <div className="mb-6 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all">
+//                   <IllusUpload />
+//               </div>
+//               <h3 className="text-xl font-medium text-[#1f1e1d]">Upload Manifest</h3>
+//               <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Drag and drop JSON, AVRO, or CSV files here to start an ingestion job. Max size 500MB.</p>
+//               <button className={`mt-8 ${btnPrimary}`}>
+//                   Select Files
+//               </button>
+//           </div>
+          
+//           <div>
+//               <SectionHeader title="Recent Uploads" />
+//               <Card>
+//                   {uploads.map((file, i) => (
+//                       <div key={i} className="flex items-center justify-between p-5 border-b border-[#f1f0ee] last:border-0 hover:bg-[#fcfbf9]   ">
+//                           <div className="flex items-center gap-4">
+//                               <div className="p-2 bg-[#f4f2f0] rounded text-[#8c8b88]">
+//                                 <FileJson size={20} />
+//                               </div>
+//                               <div>
+//                                   <p className="text-sm font-medium text-[#1f1e1d]">{file.name}</p>
+//                                   <p className="text-xs text-[#8c8b88] mt-0.5">{file.size} • {file.user}</p>
+//                               </div>
+//                           </div>
+//                           <div className="flex items-center gap-6">
+//                               <span className="text-xs text-[#8c8b88]">{file.time}</span>
+//                               <Badge status={file.status === 'Complete' ? Status.OK : file.status === 'Processing' ? Status.PROCESSING : Status.FAILED} size="sm" />
+//                           </div>
+//                       </div>
+//                   ))}
+//               </Card>
+//           </div>
+//       </div>
+//   );
+
+//   const [isRefreshing, setIsRefreshing] = useState(false);
+//   const handleRefreshJobs = () => {
+//       setIsRefreshing(true);
+//       setTimeout(() => {
+//           setIsRefreshing(false);
+//           setToast("Job statuses updated");
+//       }, 800);
+//   };
+
+//   const JobsTab = () => (
+//       <div>
+//           <SectionHeader title="Ingestion Jobs" action={
+//               <button 
+//                 onClick={handleRefreshJobs} 
+//                 className={`text-[#BE3F2F] text-sm font-medium flex items-center gap-1 hover:underline ${isRefreshing ? 'opacity-50' : ''}`}
+//               >
+//                   <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> Refresh
+//               </button>
+//           } />
+//           <Card className="overflow-hidden">
+//               <table className="w-full text-left text-sm">
+//                   <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
+//                       <tr>
+//                           <th className="px-6 py-4 font-semibold text-[#5d5c58]">Job ID</th>
+//                           <th className="px-6 py-4 font-semibold text-[#5d5c58]">Manifest</th>
+//                           <th className="px-6 py-4 font-semibold text-[#5d5c58]">Rows</th>
+//                           <th className="px-6 py-4 font-semibold text-[#5d5c58]">Duration</th>
+//                           <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
+//                           <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Actions</th>
+//                       </tr>
+//                   </thead>
+//                   <tbody className="divide-y divide-[#f1f0ee]">
+//                       {[
+//                           { id: 'job-8821', manifest: 'analytics_dump_a.json', rows: '45,200', dur: '4m 12s', status: Status.OK },
+//                           { id: 'job-8820', manifest: 'analytics_dump_b.json', rows: '12,500', dur: '1m 05s', status: Status.OK },
+//                           { id: 'job-8819', manifest: 'broken_schema.avro', rows: '0', dur: '12s', status: Status.FAILED },
+//                           { id: 'job-8818', manifest: 'stream_logs.csv', rows: '128,900', dur: 'Processing', status: Status.PROCESSING },
+//                           { id: 'job-8817', manifest: 'daily_sync.json', rows: '8,400', dur: '45s', status: Status.OK },
+//                       ].map((job) => (
+//                           <tr key={job.id} className="hover:bg-[#fcfbf9] transition-colors">
+//                               <td className="px-6 py-4 font-mono text-xs text-[#5d5c58]">{job.id}</td>
+//                               <td className="px-6 py-4 text-[#1f1e1d] font-medium">{job.manifest}</td>
+//                               <td className="px-6 py-4 text-[#5d5c58]">{job.rows}</td>
+//                               <td className="px-6 py-4 text-[#5d5c58]">{job.dur}</td>
+//                               <td className="px-6 py-4"><Badge status={job.status} size="sm" /></td>
+//                               <td className="px-6 py-4 text-right">
+//                                 <button onClick={() => setToast(`Opening logs for ${job.id}`)} className="text-[#BE3F2F] hover:text-[#a33224] cursor-pointer font-medium text-xs">View Logs</button>
+//                               </td>
+//                           </tr>
+//                       ))}
+//                   </tbody>
+//               </table>
+//           </Card>
+//       </div>
+//   );
+
+//   const [schemas, setSchemas] = useState([
+//     { name: 'UserEvent', ver: '1.2.0', type: 'AVRO', updated: '2 days ago' },
+//     { name: 'Transaction', ver: '2.0.1', type: 'PROTOBUF', updated: '5 days ago' },
+//     { name: 'SystemLog', ver: '0.9.0', type: 'JSON', updated: '1 week ago' },
+//     { name: 'AnchorProof', ver: '1.0.0', type: 'AVRO', updated: '2 weeks ago' },
+//   ]);
+//   const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false);
+//   const [newSchema, setNewSchema] = useState({ name: '', type: 'AVRO', def: '' });
+
+//   const handleRegisterSchema = () => {
+//     if (!newSchema.name) return;
+//     setSchemas([{ name: newSchema.name, ver: '0.0.1', type: newSchema.type, updated: 'Just now' }, ...schemas]);
+//     setToast(`Schema '${newSchema.name}' registered successfully`);
+//     setIsSchemaModalOpen(false);
+//     setNewSchema({ name: '', type: 'AVRO', def: '' });
+//   };
+
+//   const SchemaTab = () => (
+//       <div>
+//          <SectionHeader title="Schema Registry" action={
+//             <button 
+//                 onClick={() => setIsSchemaModalOpen(true)}
+//                 className={btnPrimary}
+//             >
+//                 Register New Schema
+//             </button>
+//          } />
+//          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//              {schemas.map((schema, i) => (
+//                  <Card key={i} className="p-6 hover:shadow-md transition-shadow cursor-pointer group">
+//                      <div className="flex justify-between items-start mb-4">
+//                          <div className="p-2 bg-[#f4f2f0] text-[#5d5c58] rounded group-hover:text-[#BE3F2F] transition-colors">
+//                              <Code size={20} />
+//                          </div>
+//                          <span className="px-2 py-1 bg-[#fbfbfa] border border-[#e0e0dc] rounded text-[10px] font-mono text-[#5d5c58] uppercase tracking-wide">{schema.type}</span>
+//                      </div>
+//                      <h4 className="font-semibold text-[#1f1e1d]">{schema.name}</h4>
+//                      <p className="text-xs text-[#8c8b88] mt-1">v{schema.ver} • Updated {schema.updated}</p>
+//                      <div className="mt-6 pt-4 border-t border-[#f1f0ee] flex gap-3">
+//                          <button onClick={() => setToast(`Viewing source: ${schema.name}`)} className="flex-1 text-xs font-medium text-[#5d5c58] hover:text-[#1f1e1d] bg-[#fbfbfa] py-2 rounded hover:bg-[#f4f2f0] transition-colors">View Source</button>
+//                          <button onClick={() => setToast(`Viewing history: ${schema.name}`)} className="flex-1 text-xs font-medium text-[#5d5c58] hover:text-[#1f1e1d] bg-[#fbfbfa] py-2 rounded hover:bg-[#f4f2f0] transition-colors">History</button>
+//                      </div>
+//                  </Card>
+//              ))}
+//          </div>
+
+//          <Modal
+//             isOpen={isSchemaModalOpen}
+//             onClose={() => setIsSchemaModalOpen(false)}
+//             title="Register New Schema"
+//             footer={
+//                 <>
+//                     <button onClick={() => setIsSchemaModalOpen(false)} className={btnSecondary}>Cancel</button>
+//                     <button onClick={handleRegisterSchema} className={btnPrimary}>Register Schema</button>
+//                 </>
+//             }
+//          >
+//             <div className="space-y-5">
+//                 <div>
+//                     <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Schema Name</label>
+//                     <input 
+//                         type="text" 
+//                         placeholder="e.g. PaymentEvent"
+//                         className={formInputClass}
+//                         value={newSchema.name}
+//                         onChange={e => setNewSchema({...newSchema, name: e.target.value})}
+//                     />
+//                 </div>
+//                 <div>
+//                     <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Type</label>
+//                     <select 
+//                         className={formInputClass}
+//                         value={newSchema.type}
+//                         onChange={e => setNewSchema({...newSchema, type: e.target.value})}
+//                     >
+//                         <option value="AVRO">Apache Avro</option>
+//                         <option value="PROTOBUF">Protobuf</option>
+//                         <option value="JSON">JSON Schema</option>
+//                     </select>
+//                 </div>
+//                 <div>
+//                     <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Schema Definition</label>
+//                     <textarea 
+//                         rows={6}
+//                         placeholder="{ ... }"
+//                         className={`${formInputClass} font-mono`}
+//                         value={newSchema.def}
+//                         onChange={e => setNewSchema({...newSchema, def: e.target.value})}
+//                     />
+//                 </div>
+//             </div>
+//          </Modal>
+//       </div>
+//   );
+
+//   const tabs = [
+//     { id: 'upload', label: 'Upload Manifest', icon: UploadCloud, content: <UploadTab /> },
+//     { id: 'jobs', label: 'Ingest Jobs', icon: List, content: <JobsTab /> },
+//     { id: 'schema', label: 'Schema Registry', icon: Code, content: <SchemaTab /> },
+//   ];
+//   return (
+//     <>
+//         <Tabs tabs={tabs} />
+//         <Toast message={toast} onClose={() => setToast(null)} />
+//     </>
+//   );
+// };
 
 
 
