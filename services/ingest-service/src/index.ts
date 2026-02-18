@@ -132,13 +132,11 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
 
   const requestId = "req-" + randomUUID();
   const timestamp = new Date().toISOString();
-  let buffer: Buffer;
-  let minioKey: string;
+  const buffer = Buffer.from(JSON.stringify(payload, null, 2));
+  const minioKey = `raw/${requestId}.json`;
 
   // Save the raw JSON payload to MinIO before sending to Kafka!
   try {
-    buffer = Buffer.from(JSON.stringify(payload, null, 2));
-    minioKey = `raw/${requestId}.json`;
     
     await minioClient.putObject(MINIO_BUCKET, minioKey, buffer, buffer.length, {
       'Content-Type': 'application/json'
