@@ -30,9 +30,10 @@ export class SolanaClient {
   }
 
   async ensureInit(requestId: string) {
+    const solanaId = this.getSolanaId(requestId);
     // attempt to init if account absent
     const [pda] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("anchor"), Buffer.from(requestId)],
+      [Buffer.from("anchor"), Buffer.from(solanaId)],
       this.program.programId
     );
     try {
