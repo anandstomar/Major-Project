@@ -87,6 +87,65 @@ const upload = multer({
 // Health Check
 app.get("/api/v1/ingest/health", (_, res) => res.json({ ok: true, status: "healthy" }));0
 
+// Route 3: Bulk File Upload (For the Drag-and-Drop React UI)
+app.post("/api/v1/ingest/upload", authMiddleware, upload.single("file"), async (req: any, res: any) => {
+  const file = req.file;
+  
+  if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const requestId = "job-" + randomUUID();
+  const timestamp = new Date().toISOString();
+  const minioKey = `uploads/${requestId}-${file.originalname}`;
+
+  try {
+    // 1. Upload the raw file to MinIO
+    await minioClient.putObject(MINIO_BUCKET, minioKey, file.buffer, file.buffer.length, {
+      'Content-Type': file.mimetype || 'application/octet-stream'
+    });
+    console.log(`[FILE INGEST] Saved file to MinIO: ${minioKey}`);
+
+    // 2. Publish to Kafka
+    const kafkaMessage = {
+      event_id: requestId,
+      type: "bulk_file_upload",
+      actor: req.user?.preferred_username || "system",
+      filename: file.originalname,
+      minio_key: minioKey,
+      timestamp,
+    };
+
+    await producer.send({
+      topic: KAFKA_TOPIC,
+      messages: [{ key: requestId, value: JSON.stringify(kafkaMessage) }],
+    });
+    console.log(`[FILE INGEST] Published ${requestId} to Kafka`);
+
+    // 3. Log the Ingestion Job in PostgreSQL
+    await prisma.ingestJob.create({
+      data: {
+        jobId: requestId,
+        filename: file.originalname,
+        fileSize: file.buffer.length,
+        mimetype: file.mimetype || "application/octet-stream",
+        submitter: req.user?.preferred_username || "system",
+        minioKey: minioKey,
+        status: "PROCESSING", // Stays in processing until validation finishes
+        rows: 0, // You can calculate actual rows later in a worker
+      }
+    });
+    console.log(`[FILE INGEST] Logged job ${requestId} to PostgreSQL`);
+
+    // 4. Return success to the UI
+    res.status(202).json({ requestId, status: 'received', message: "File queued for ingestion" });
+
+  } catch (err) {
+    console.error("Upload route error:", err);
+    res.status(500).json({ error: "Failed to process file upload" });
+  }
+});
+
 // Route 2: Fetch Ingestion History (For the React UI Tables)
 app.get("/api/v1/ingest/jobs", authMiddleware, async (req: any, res: any) => {
   try {
@@ -162,10 +221,7 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
       messages: [{ key: requestId, value: JSON.stringify(kafkaMessage) }],
     });
 
-    console.log(`[JSON INGEST] Published ${requestId} to Kafka`);
-    res.status(202).json({ requestId, status: 'received', message: "Queued for processing" });
-
-    try {
+      try {
     await prisma.ingestJob.create({
       data: {
         jobId: requestId,
@@ -182,6 +238,11 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
     } catch (dbErr) {
        console.error("Failed to log ingest job to DB:", dbErr);
     }
+
+    console.log(`[JSON INGEST] Published ${requestId} to Kafka`);
+    res.status(202).json({ requestId, status: 'received', message: "Queued for processing" });
+
+  
   } catch (err) {
     console.error("Kafka error:", err);
     res.status(500).json({ error: "Failed to queue message" });
