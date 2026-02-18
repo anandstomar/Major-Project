@@ -11,11 +11,7 @@ import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { PrismaClient } from '@prisma/client';
 
-// Initialize Prisma
 const prisma = new PrismaClient();
-
-// ---- Infrastructure Clients ----
-// (Keep your existing Minio, IPFS, and Kafka clients here)
 
 dotenv.config();
 
@@ -50,7 +46,6 @@ const authMiddleware = (req: any, res: any, next: any) => {
   });
 };
 
-// ---- Infrastructure Clients ----
 const minioClient = new Minio.Client({
   endPoint: process.env.MINIO_ENDPOINT || "minio",
   port: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
@@ -70,6 +65,7 @@ const kafka = new Kafka({
 });
 
 const producer = kafka.producer();
+const consumer = kafka.consumer({ groupId: 'ingest-worker-group' });
 const KAFKA_TOPIC = process.env.KAFKA_TOPIC || "ingest.events";
 
 // ---- Express Setup ----
@@ -249,7 +245,42 @@ app.post("/api/v1/ingest", authMiddleware, async (req: any, res: any) => {
   }
 });
 
-// ---- Initialization ----
+// ---- Background Worker ----
+async function startWorker() {
+  await consumer.connect();
+  await consumer.subscribe({ topic: KAFKA_TOPIC, fromBeginning: false });
+
+  await consumer.run({
+    eachMessage: async ({ message }) => {
+      if (!message.value) return;
+      
+      try {
+        const event = JSON.parse(message.value.toString());
+
+        // Only process bulk file uploads
+        if (event.type === "bulk_file_upload") {
+          console.log(`[WORKER] Picked up job ${event.event_id} from Kafka...`);
+          
+          // Simulate the time it takes to parse a massive CSV/JSON file (3 seconds)
+          setTimeout(async () => {
+            await prisma.ingestJob.update({
+              where: { jobId: event.event_id },
+              data: {
+                status: "OK",
+                rows: Math.floor(Math.random() * 50000) + 1000, // Generate a fake row count
+                duration: "3.2s"
+              }
+            });
+            console.log(`[WORKER] Job ${event.event_id} successfully processed!`);
+          }, 3000);
+        }
+      } catch (err) {
+        console.error("[WORKER] Failed to process message", err);
+      }
+    },
+  });
+}
+
 async function start() {
   try {
     const exists = await minioClient.bucketExists(MINIO_BUCKET);
@@ -261,6 +292,10 @@ async function start() {
   try {
     await producer.connect();
     console.log("✅ Kafka producer connected");
+    
+    await startWorker();
+    console.log("👷 Background worker listening for jobs...");
+    
   } catch (e) {
     console.log("Kafka init failed, continuing...", e instanceof Error ? e.message : String(e));
   }
