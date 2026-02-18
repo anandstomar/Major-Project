@@ -24,3 +24,13 @@ env:
     value: "indexerpwd"
   - name: POSTGRES_DB
     value: "indexer"
+  - name: MINIO_ENDPOINT
+    value: "minio"
+  - name: MINIO_PORT
+    value: "9000"
+  - name: MINIO_USE_SSL
+    value: "false"
+  - name: MINIO_ACCESS_KEY
+    value: "minioadmin"
+  - name: MINIO_SECRET_KEY
+    value: "minioadmin"
