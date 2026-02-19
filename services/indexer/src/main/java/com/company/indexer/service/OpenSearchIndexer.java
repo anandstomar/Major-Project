@@ -27,4 +27,41 @@ public class OpenSearchIndexer {
         HttpEntity<String> ent = new HttpEntity<>(body, headers);
         rest.exchange(idxUrl, HttpMethod.PUT, ent, String.class);
     }
+
+    public java.util.List<java.util.Map<String, Object>> search(String queryTerm) {
+        try {
+            String searchUrl = opensearchUrl + "/anchors/_search";
+            // Search across request_id, merkle_root, and tx_hash simultaneously
+            String body = String.format("{\"query\": {\"multi_match\": {\"query\": \"%s\", \"fields\": [\"request_id\", \"merkle_root\", \"tx_hash\"]}}}", queryTerm);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> ent = new HttpEntity<>(body, headers);
+
+            
+            ResponseEntity<java.util.Map> response = rest.exchange(searchUrl, HttpMethod.POST, ent, java.util.Map.class);
+            
+            // Extract the actual hits from OpenSearch's deeply nested response
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> bodyMap = (java.util.Map<String, Object>) response.getBody();
+            if (bodyMap != null && bodyMap.containsKey("hits")) {
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> hitsMap = (java.util.Map<String, Object>) bodyMap.get("hits");
+                @SuppressWarnings("unchecked")
+                java.util.List<java.util.Map<String, Object>> hitsList = (java.util.List<java.util.Map<String, Object>>) hitsMap.get("hits");
+                
+                // Clean up the data for the React frontend
+                return hitsList.stream().map(hit -> {
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> source = (java.util.Map<String, Object>) hit.get("_source");
+                    source.put("score", hit.get("_score"));
+                    source.put("requestId", source.get("request_id")); // Map to frontend's expected camelCase key
+                    return source;
+                }).toList();
+            }
+        } catch (Exception ex) {
+            System.err.println("OpenSearch query failed: " + ex.getMessage());
+        }
+        return java.util.List.of();
+    }
 }

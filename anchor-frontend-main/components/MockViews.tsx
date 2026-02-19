@@ -1011,12 +1011,103 @@ export const SearchPage = () => {
       );
   };
 
-  const OpenSearchTab = () => (
-      <div className="flex flex-col h-full items-center justify-center text-gray-400">
-           <SearchIcon size={48} className="mb-4 opacity-20" />
-           <p>Full-Text Search integration coming in Phase 3</p>
-      </div>
-  );
+const OpenSearchTab = () => {
+      const [query, setQuery] = useState('');
+      const [results, setResults] = useState<any[]>([]);
+      const [isSearching, setIsSearching] = useState(false);
+      const [hasSearched, setHasSearched] = useState(false);
+
+      const handleSearch = async (e: React.FormEvent) => {
+          e.preventDefault();
+          if (!query.trim()) return;
+
+          setIsSearching(true);
+          setHasSearched(true);
+          
+          try {
+              const token = localStorage.getItem("access_token");
+              // Assuming your Java Indexer will expose a /api/search endpoint for OpenSearch
+              const response = await fetchWithRetry(`/indexer/api/search?q=${encodeURIComponent(query)}`, {
+                  headers: { "Authorization": `Bearer ${token}` }
+              });
+
+              if (response.ok) {
+                  const data = await response.json();
+                  setResults(data || []);
+              } else {
+                  console.warn("Search endpoint returned an error.");
+                  setResults([]);
+              }
+          } catch (err) {
+              console.error("Failed to execute full-text search", err);
+              setResults([]);
+          } finally {
+              setIsSearching(false);
+          }
+      };
+
+      return (
+          <div className="flex flex-col h-full animate-in fade-in duration-500">
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="flex gap-4 mb-8">
+                   <div className="flex-1 relative">
+                      <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-[#BE3F2F]" size={20} />
+                      <input 
+                        type="text" 
+                        placeholder="Search through metadata, raw payloads, or request IDs..." 
+                        className="w-full bg-white border border-[#d6d3d0] rounded-lg px-4 py-3.5 text-sm text-[#1f1e1d] placeholder-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#BE3F2F]/20 focus:border-[#BE3F2F] transition-all shadow-sm pl-12"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                   </div>
+                   <button type="submit" disabled={isSearching} className="px-6 py-3.5 bg-[#1f1e1d] hover:bg-[#333230] text-white text-sm font-medium rounded-lg shadow-md transition-all flex items-center gap-2">
+                       {isSearching ? "Searching..." : "Search"}
+                   </button>
+              </form>
+
+              {/* Results Area */}
+              <div className="flex-1 overflow-y-auto">
+                  {!hasSearched ? (
+                      <div className="flex flex-col items-center justify-center h-48 text-[#8c8b88]">
+                          <Database size={40} className="mb-4 opacity-20" />
+                          <p>Enter a keyword to search across all indexed anchor data.</p>
+                      </div>
+                  ) : isSearching ? (
+                      <div className="flex justify-center py-12">
+                          <span className="text-sm text-gray-500 animate-pulse">Querying OpenSearch cluster...</span>
+                      </div>
+                  ) : results.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-48 text-[#8c8b88]">
+                          <SearchIcon size={40} className="mb-4 opacity-20" />
+                          <p>No results found for "{query}".</p>
+                      </div>
+                  ) : (
+                      <div className="space-y-4">
+                          <p className="text-xs font-bold text-[#8c8b88] uppercase tracking-wider mb-4">
+                              Found {results.length} Results
+                          </p>
+                          {results.map((result, idx) => (
+                              <Card key={idx} className="p-5 hover:border-[#BE3F2F]/30 transition-colors">
+                                  <div className="flex justify-between items-start mb-2">
+                                      <h3 className="text-[#BE3F2F] font-mono text-sm font-medium">
+                                          {result.requestId || 'Unknown Request ID'}
+                                      </h3>
+                                      <span className="text-[10px] bg-[#f1f0ee] text-[#5d5c58] px-2 py-1 rounded uppercase font-bold">
+                                          Score: {result.score || 'N/A'}
+                                      </span>
+                                  </div>
+                                  <p className="text-sm text-[#5d5c58] line-clamp-2">
+                                      {/* Assuming your backend returns a highlighted snippet or raw data string */}
+                                      {result.snippet || JSON.stringify(result.data || result)}
+                                  </p>
+                              </Card>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          </div>
+      );
+  };
 
   const tabs = [
     { id: 'indexer', label: 'Index Explorer', icon: Database, content: <IndexerTab /> },
