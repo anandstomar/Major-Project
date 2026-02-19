@@ -1,16 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: solana-listener
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
-      app: solana-listener
+      app: {{ .Chart.Name }}
   template:
     metadata:
       labels:
-        app: solana-listener
+        app: {{ .Chart.Name }}
     spec:
       containers:
         - name: solana-listener

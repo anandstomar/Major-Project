@@ -1,5 +1,5 @@
 apiVersion: v2
-name: indexer
+name: indexer-solana
 description: Base Helm chart for indexer-solana
 type: application
 version: 0.1.0
