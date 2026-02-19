@@ -25,7 +25,7 @@ app:
     anchors-completed: ${ANCHORS_COMPLETED_TOPIC:anchors.completed}
 
 opensearch:
-  url: ${OPENSEARCH_URL:http://localhost:9200}
+  url: http://${OPENSEARCH_HOST:localhost}:${OPENSEARCH_PORT:9200}
 
 management:
   endpoints:

@@ -34,3 +34,5 @@ env:
     value: "opensearch.default.svc.cluster.local"
   - name: OPENSEARCH_PORT
     value: "9200"
+  - name: OPENSEARCH_URL
+    value: "http://opensearch:9200"
