@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 public class AnchorEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name="request_id", nullable=false, unique=true)
     private String requestId;
@@ -37,7 +37,7 @@ public class AnchorEntity {
     @Column(name="submitter")
     private String submitter;
 
-    public Long getId() { return id; }
+    public Integer getId() { return id; }
     public String getRequestId() { return requestId; }
     public void setRequestId(String requestId) { this.requestId = requestId; }
     public String getMerkleRoot() { return merkleRoot; }

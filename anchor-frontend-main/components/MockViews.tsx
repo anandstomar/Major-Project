@@ -923,54 +923,184 @@ export const SearchPage = () => {
       </div>
   );
 
-  const OpenSearchTab = () => (
-      <div className="flex flex-col h-full">
-           <div className="flex gap-4 mb-6">
-               <div className="flex-1 relative">
-                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8c8b88]" size={18} />
-                  <input type="text" placeholder="Full-text search..." className={`${formInputClass} pl-10`} />
-               </div>
-           </div>
-           
-           <div className="flex gap-8 flex-1">
-               {/* Facets - Styled like enterprise filters */}
-               <div className="w-64 space-y-8">
-                   <div>
-                       <h4 className="text-[10px] font-bold text-[#8c8b88] uppercase tracking-widest mb-3 pb-1 border-b border-[#e0e0dc]">Index</h4>
-                       <div className="space-y-3 text-sm text-[#5d5c58]">
-                           <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" defaultChecked /> anchors-v1 (1.2M)</label>
-                           <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" /> logs-2023 (5.4M)</label>
-                       </div>
-                   </div>
-                   <div>
-                       <h4 className="text-[10px] font-bold text-[#8c8b88] uppercase tracking-widest mb-3 pb-1 border-b border-[#e0e0dc]">Status</h4>
-                       <div className="space-y-3 text-sm text-[#5d5c58]">
-                           <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" defaultChecked /> Success</label>
-                           <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" /> Failure</label>
-                       </div>
-                   </div>
-               </div>
 
-               {/* Results */}
-               <div className="flex-1 space-y-4">
-                   {[1, 2, 3].map(i => (
-                       <Card key={i} className="p-5 hover:border-[#BE3F2F] transition-colors cursor-pointer group">
-                           <div className="flex justify-between items-start">
-                               <h5 onClick={() => setToast(`Opening doc-${10203+i}`)} className="text-[#BE3F2F] font-medium text-sm hover:underline">Document ID: doc-{10203 + i}</h5>
-                               <span className="text-xs text-[#8c8b88]">Score: 0.9{8-i}</span>
-                           </div>
-                           <p className="text-sm text-[#1f1e1d] mt-2 leading-relaxed font-light">
-                               ... transaction confirmed with <span className="bg-[#fef3c7] font-normal">merkle_root</span> matching the request signature. 
-                               Event propagated to <span className="bg-[#fef3c7] font-normal">indexer</span> service successfully...
-                           </p>
-                           <div className="mt-4 flex gap-2">
-                               <span className="px-2 py-0.5 bg-[#f4f2f0] border border-[#e0e0dc] text-[#5d5c58] text-[10px] rounded uppercase tracking-wide">Log</span>
-                               <span className="px-2 py-0.5 bg-[#f4f2f0] border border-[#e0e0dc] text-[#5d5c58] text-[10px] rounded uppercase tracking-wide">Prod</span>
-                           </div>
-                       </Card>
-                   ))}
-               </div>
-           </div>
+import React, { useState, useEffect } from 'react';
+import { 
+  Database, Search as SearchIcon, FileText, CheckCircle, 
+  XCircle, Clock, ArrowRight 
+} from 'lucide-react';
+import { Badge } from './ui/Badge';
+import { Card } from './ui/Card'; // Assuming you have this shared component
+import { Status } from '../types';
+import { Toast } from './ui/Toast';
+import { fetchWithRetry } from '../utils/api';
+
+// --- Reusable Components ---
+const Tabs = ({ tabs }: { tabs: { id: string, label: string, icon: any, content: React.ReactNode }[] }) => {
+  const [activeTab, setActiveTab] = useState(tabs[0].id);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex border-b border-[#e0e0dc] mb-8 space-x-8 shrink-0">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 pb-3 text-sm font-medium transition-all relative ${
+              activeTab === tab.id 
+                ? 'text-[#BE3F2F]' 
+                : 'text-[#8c8b88] hover:text-[#1f1e1d]'
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#BE3F2F]"></span>
+            )}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 relative">
+        {tabs.find(t => t.id === activeTab)?.content}
+      </div>
+    </div>
+  );
+};
+
+const formInputClass = "w-full bg-[#fcfbf9] border border-[#d6d3d0] rounded px-3 py-2.5 text-sm text-[#1f1e1d] placeholder-[#a8a29e] focus:outline-none focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] transition-all shadow-inner";
+const btnPrimary = "px-4 py-2 bg-[#BE3F2F] text-white text-sm font-medium rounded shadow-sm hover:bg-[#a33224] transition-colors";
+
+export const SearchPage = () => {
+  const [toast, setToast] = useState<string | null>(null);
+
+  const IndexerTab = () => {
+      const [anchors, setAnchors] = useState<any[]>([]);
+      const [isLoading, setIsLoading] = useState(true);
+      const [filter, setFilter] = useState('');
+
+      // Fetch Real Data from Java Indexer Service
+      const fetchAnchors = async () => {
+          try {
+              setIsLoading(true);
+              const token = localStorage.getItem("access_token");
+              // Hits the Java Service via Ingress
+              const response = await fetchWithRetry("/indexer/api/anchors", {
+                  headers: { "Authorization": `Bearer ${token}` }
+              });
+
+              if (response.ok) {
+                  const data = await response.json();
+                  setAnchors(data || []);
+              }
+          } catch (err) {
+              console.error("Failed to fetch anchors", err);
+              setToast("Failed to load indexer data");
+          } finally {
+              setIsLoading(false);
+          }
+      };
+
+      useEffect(() => {
+          fetchAnchors();
+          // Poll every 5s to see updates from the Listener -> Kafka -> Java pipeline
+          const interval = setInterval(fetchAnchors, 5000); 
+          return () => clearInterval(interval);
+      }, []);
+
+      const filteredAnchors = anchors.filter(a => 
+          a.requestId?.toLowerCase().includes(filter.toLowerCase()) ||
+          a.txHash?.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      return (
+          <div>
+              <div className="flex gap-4 mb-6">
+                   <div className="flex-1 relative">
+                      <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8c8b88]" size={18} />
+                      <input 
+                        type="text" 
+                        placeholder="Filter by Request ID or Tx Hash..." 
+                        className={`${formInputClass} pl-10`} 
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                      />
+                   </div>
+                   <button onClick={fetchAnchors} className={btnPrimary}>Refresh</button>
+              </div>
+              <Card className="overflow-hidden min-h-[300px] relative">
+                   {isLoading && anchors.length === 0 && (
+                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                           <span className="text-sm text-gray-500">Loading verified anchors...</span>
+                       </div>
+                   )}
+                   <table className="w-full text-left text-sm">
+                       <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
+                           <tr>
+                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Request ID</th>
+                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Merkle Root</th>
+                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Tx Hash</th>
+                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Block</th>
+                               <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
+                           </tr>
+                       </thead>
+                       <tbody className="divide-y divide-[#f1f0ee] font-mono text-xs">
+                           {filteredAnchors.length === 0 && !isLoading && (
+                               <tr>
+                                   <td colSpan={5} className="text-center py-12 text-gray-400">
+                                       No verified anchors found yet.
+                                   </td>
+                               </tr>
+                           )}
+                           {filteredAnchors.map((row, i) => (
+                               <tr key={i} className="hover:bg-[#fcfbf9]">
+                                   <td className="px-6 py-3 text-[#BE3F2F] font-medium">
+                                      {row.requestId ? row.requestId.substring(0, 18) + "..." : "N/A"}
+                                   </td>
+                                   <td className="px-6 py-3 text-[#5d5c58]">
+                                      {row.merkleRoot ? row.merkleRoot.substring(0, 10) + "..." : "-"}
+                                   </td>
+                                   <td className="px-6 py-3 text-[#1f1e1d]">
+                                       {row.txHash ? (
+                                           <a 
+                                             href={`https://explorer.solana.com/tx/${row.txHash}?cluster=devnet`} 
+                                             target="_blank" 
+                                             rel="noreferrer"
+                                             className="hover:underline flex items-center gap-1"
+                                           >
+                                               {row.txHash.substring(0, 12)}...
+                                               <ArrowRight size={10} className="-rotate-45" />
+                                           </a>
+                                       ) : (
+                                           <span className="text-gray-400">Pending</span>
+                                       )}
+                                   </td>
+                                   <td className="px-6 py-3 text-[#5d5c58]">
+                                      {row.blockNumber || "-"}
+                                   </td>
+                                   <td className="px-6 py-3">
+                                       {row.status === 'success' || row.status === 'OK' ? (
+                                           <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                                               <CheckCircle size={14} /> Confirmed
+                                           </span>
+                                       ) : (
+                                           <span className="flex items-center gap-1.5 text-amber-600 font-medium">
+                                               <Clock size={14} /> Pending
+                                           </span>
+                                       )}
+                                   </td>
+                               </tr>
+                           ))}
+                       </tbody>
+                   </table>
+              </Card>
+          </div>
+      );
+  };
+
+  const OpenSearchTab = () => (
+      <div className="flex flex-col h-full items-center justify-center text-gray-400">
+           <SearchIcon size={48} className="mb-4 opacity-20" />
+           <p>Full-Text Search integration coming in Phase 3</p>
       </div>
   );
 
@@ -985,6 +1115,69 @@ export const SearchPage = () => {
     </>
   );
 };
+
+//   const OpenSearchTab = () => (
+//       <div className="flex flex-col h-full">
+//            <div className="flex gap-4 mb-6">
+//                <div className="flex-1 relative">
+//                   <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8c8b88]" size={18} />
+//                   <input type="text" placeholder="Full-text search..." className={`${formInputClass} pl-10`} />
+//                </div>
+//            </div>
+           
+//            <div className="flex gap-8 flex-1">
+//                {/* Facets - Styled like enterprise filters */}
+//                <div className="w-64 space-y-8">
+//                    <div>
+//                        <h4 className="text-[10px] font-bold text-[#8c8b88] uppercase tracking-widest mb-3 pb-1 border-b border-[#e0e0dc]">Index</h4>
+//                        <div className="space-y-3 text-sm text-[#5d5c58]">
+//                            <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" defaultChecked /> anchors-v1 (1.2M)</label>
+//                            <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" /> logs-2023 (5.4M)</label>
+//                        </div>
+//                    </div>
+//                    <div>
+//                        <h4 className="text-[10px] font-bold text-[#8c8b88] uppercase tracking-widest mb-3 pb-1 border-b border-[#e0e0dc]">Status</h4>
+//                        <div className="space-y-3 text-sm text-[#5d5c58]">
+//                            <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" defaultChecked /> Success</label>
+//                            <label className="flex items-center gap-3"><input type="checkbox" className="accent-[#BE3F2F]" /> Failure</label>
+//                        </div>
+//                    </div>
+//                </div>
+
+//                {/* Results */}
+//                <div className="flex-1 space-y-4">
+//                    {[1, 2, 3].map(i => (
+//                        <Card key={i} className="p-5 hover:border-[#BE3F2F] transition-colors cursor-pointer group">
+//                            <div className="flex justify-between items-start">
+//                                <h5 onClick={() => setToast(`Opening doc-${10203+i}`)} className="text-[#BE3F2F] font-medium text-sm hover:underline">Document ID: doc-{10203 + i}</h5>
+//                                <span className="text-xs text-[#8c8b88]">Score: 0.9{8-i}</span>
+//                            </div>
+//                            <p className="text-sm text-[#1f1e1d] mt-2 leading-relaxed font-light">
+//                                ... transaction confirmed with <span className="bg-[#fef3c7] font-normal">merkle_root</span> matching the request signature. 
+//                                Event propagated to <span className="bg-[#fef3c7] font-normal">indexer</span> service successfully...
+//                            </p>
+//                            <div className="mt-4 flex gap-2">
+//                                <span className="px-2 py-0.5 bg-[#f4f2f0] border border-[#e0e0dc] text-[#5d5c58] text-[10px] rounded uppercase tracking-wide">Log</span>
+//                                <span className="px-2 py-0.5 bg-[#f4f2f0] border border-[#e0e0dc] text-[#5d5c58] text-[10px] rounded uppercase tracking-wide">Prod</span>
+//                            </div>
+//                        </Card>
+//                    ))}
+//                </div>
+//            </div>
+//       </div>
+//   );
+
+//   const tabs = [
+//     { id: 'indexer', label: 'Index Explorer', icon: Database, content: <IndexerTab /> },
+//     { id: 'opensearch', label: 'Full-Text Search', icon: SearchIcon, content: <OpenSearchTab /> },
+//   ];
+//   return (
+//     <>
+//         <Tabs tabs={tabs} />
+//         <Toast message={toast} onClose={() => setToast(null)} />
+//     </>
+//   );
+// };
 
 export const Scheduler = () => {
     const [toast, setToast] = useState<string | null>(null);
