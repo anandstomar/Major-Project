@@ -5,7 +5,7 @@ spring:
     password: ${DB_PASS:indexerpwd}
   jpa:
     hibernate:
-      ddl-auto: validate #update
+      ddl-auto: update #validate
     show-sql: true
     properties:
       hibernate:

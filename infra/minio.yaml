@@ -33,6 +33,15 @@ spec:
               name: api
             - containerPort: 9001
               name: console
+          volumeMounts:
+            - name: minio-storage
+              mountPath: /data 
+      # 👇 FIX 1: Indented under template.spec
+      volumes:
+        - name: minio-storage
+          persistentVolumeClaim:
+            # 👇 FIX 2: Indented under persistentVolumeClaim
+            claimName: minio-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -49,3 +58,14 @@ spec:
     - name: console
       port: 9001
       targetPort: 9001
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

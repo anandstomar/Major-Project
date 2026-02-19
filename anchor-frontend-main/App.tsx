@@ -12,7 +12,6 @@ import { Login, Signup } from './components/Auth';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
@@ -43,16 +42,41 @@ export default function App() {
     );
   }
 
+  // Helper to handle login and save token
+  const handleLogin = (token?: string) => {
+    // If your Login component passes the token up, save it here!
+    if (token && typeof token === 'string') {
+      localStorage.setItem("access_token", token);
+    }
+    setIsAuthenticated(true);
+  };
+
   return (
     <HashRouter>
       <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={() => setIsAuthenticated(true)} />} />
-        <Route path="/signup" element={isAuthenticated ? <Navigate to="/" replace /> : <Signup onLogin={() => setIsAuthenticated(true)} />} />
+        <Route 
+          path="/login" 
+          element={isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />} 
+        />
+        <Route 
+          path="/signup" 
+          element={isAuthenticated ? <Navigate to="/" replace /> : <Signup onLogin={handleLogin} />} 
+        />
         
-        <Route path="/" element={isAuthenticated ? <Layout onLogout={() => {
-            localStorage.removeItem("access_token");
-            setIsAuthenticated(false);
-        }} /> : <Navigate to="/login" replace />}>
+        {/* 👇 FIX: Wrap ALL dashboard routes INSIDE the authenticated Layout route */}
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated ? (
+              <Layout onLogout={() => {
+                localStorage.removeItem("access_token");
+                setIsAuthenticated(false);
+              }} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="anchors" element={<Anchors />} />
           <Route path="ingest" element={<Ingest />} />
@@ -64,6 +88,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
+      
       {isAuthenticated && <ChatAssistant />}
     </HashRouter>
   );

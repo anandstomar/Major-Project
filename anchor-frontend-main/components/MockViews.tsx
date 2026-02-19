@@ -887,92 +887,6 @@ export const Ingest = () => {
 export const SearchPage = () => {
   const [toast, setToast] = useState<string | null>(null);
 
-  const IndexerTab = () => (
-      <div>
-          <div className="flex gap-4 mb-6">
-               <div className="flex-1 relative">
-                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8c8b88]" size={18} />
-                  <input type="text" placeholder="SQL filter (e.g. SELECT * FROM anchors WHERE...)" className={`${formInputClass} pl-10`} />
-               </div>
-               <button onClick={() => setToast("Query executed (124ms)")} className={btnPrimary}>Run Query</button>
-          </div>
-          <Card className="overflow-hidden">
-               <table className="w-full text-left text-sm">
-                  <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
-                      <tr>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58] w-24">ID</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Created At</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Source</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58]">Payload Preview</th>
-                          <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Size</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#f1f0ee] font-mono text-xs">
-                      {Array.from({length: 10}).map((_, i) => (
-                          <tr key={i} className="hover:bg-[#fcfbf9]">
-                              <td className="px-6 py-3 text-[#BE3F2F]">{1000 + i}</td>
-                              <td className="px-6 py-3 text-[#5d5c58]">{new Date().toISOString()}</td>
-                              <td className="px-6 py-3 text-[#1f1e1d]">kafka.topic.events</td>
-                              <td className="px-6 py-3 text-[#8c8b88] truncate max-w-xs">{`{"evt": "user_login", "uid": "u_${500+i}", "meta": { ... }}`}</td>
-                              <td className="px-6 py-3 text-[#5d5c58] text-right">{120 + i * 2}b</td>
-                          </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </Card>
-      </div>
-  );
-
-
-import React, { useState, useEffect } from 'react';
-import { 
-  Database, Search as SearchIcon, FileText, CheckCircle, 
-  XCircle, Clock, ArrowRight 
-} from 'lucide-react';
-import { Badge } from './ui/Badge';
-import { Card } from './ui/Card'; // Assuming you have this shared component
-import { Status } from '../types';
-import { Toast } from './ui/Toast';
-import { fetchWithRetry } from '../utils/api';
-
-// --- Reusable Components ---
-const Tabs = ({ tabs }: { tabs: { id: string, label: string, icon: any, content: React.ReactNode }[] }) => {
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex border-b border-[#e0e0dc] mb-8 space-x-8 shrink-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 pb-3 text-sm font-medium transition-all relative ${
-              activeTab === tab.id 
-                ? 'text-[#BE3F2F]' 
-                : 'text-[#8c8b88] hover:text-[#1f1e1d]'
-            }`}
-          >
-            <tab.icon size={16} />
-            {tab.label}
-            {activeTab === tab.id && (
-              <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#BE3F2F]"></span>
-            )}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 relative">
-        {tabs.find(t => t.id === activeTab)?.content}
-      </div>
-    </div>
-  );
-};
-
-const formInputClass = "w-full bg-[#fcfbf9] border border-[#d6d3d0] rounded px-3 py-2.5 text-sm text-[#1f1e1d] placeholder-[#a8a29e] focus:outline-none focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] transition-all shadow-inner";
-const btnPrimary = "px-4 py-2 bg-[#BE3F2F] text-white text-sm font-medium rounded shadow-sm hover:bg-[#a33224] transition-colors";
-
-export const SearchPage = () => {
-  const [toast, setToast] = useState<string | null>(null);
-
   const IndexerTab = () => {
       const [anchors, setAnchors] = useState<any[]>([]);
       const [isLoading, setIsLoading] = useState(true);
@@ -1115,6 +1029,8 @@ export const SearchPage = () => {
     </>
   );
 };
+
+
 
 //   const OpenSearchTab = () => (
 //       <div className="flex flex-col h-full">

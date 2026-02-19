@@ -13,10 +13,14 @@ export async function fetchWithRetry(
     const response = await fetch(url, options);
 
     if (response.status === 401) {
-      console.warn("Session expired. Logging out...");
-      localStorage.removeItem("access_token"); // Destroy the dead token
-      window.location.href = "/login";         // Force redirect to the login page
-      throw new Error("Unauthorized - Redirecting to login");
+      // 👇 This will tell us EXACTLY which microservice is failing!
+      console.error(`🚨 [DEBUG] 401 Unauthorized caught on endpoint: ${endpoint}`);
+      
+      // 👇 TEMPORARILY DISABLED so you don't get kicked out while debugging!
+      localStorage.removeItem("access_token"); 
+      window.location.hash = "#/login"; // <-- This is the correct hash routing for later!
+      
+      return response; // Return it so the app doesn't crash
     }
 
     // If it's a server error (5xx), throw so we can catch and retry
@@ -28,7 +32,7 @@ export async function fetchWithRetry(
     
   } catch (error) {
     if (retries > 0) {
-      console.warn(`Fetch failed. Retrying in ${backoff}ms... (${retries} retries left)`);
+      console.warn(`Fetch failed for ${endpoint}. Retrying in ${backoff}ms... (${retries} retries left)`);
       await new Promise(resolve => setTimeout(resolve, backoff));
       // Retry, doubling the wait time (exponential backoff)
       return fetchWithRetry(endpoint, options, retries - 1, backoff * 2);

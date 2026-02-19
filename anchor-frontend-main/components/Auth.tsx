@@ -10,7 +10,7 @@ const formInputClass = "w-full bg-[#fcfbf9] border border-[#d6d3d0] rounded-lg p
 const btnPrimary = "w-full py-2.5 bg-[#BE3F2F] text-white text-sm font-medium rounded-lg shadow-md hover:bg-[#a33224] transition-all flex justify-center items-center gap-2 transform active:scale-[0.98]";
 
 interface AuthProps {
-  onLogin: () => void;
+  onLogin: (token?: string) => void; 
 }
 
 export const Login: React.FC<AuthProps> = ({ onLogin }) => {
@@ -18,8 +18,7 @@ export const Login: React.FC<AuthProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   
-  // Added state to capture what the user types
-  const [email, setEmail] = useState('testuser@example.com'); // Matching your Keycloak test user
+  const [email, setEmail] = useState('testuser@example.com');
   const [password, setPassword] = useState('password');
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +26,7 @@ export const Login: React.FC<AuthProps> = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      // 1. Authenticate with Keycloak via OCI Load Balancer
+      // 1. Get the token directly from Keycloak
       const tokenResponse = await fetch("http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/token", {
         method: "POST",
         headers: {
@@ -42,47 +41,31 @@ export const Login: React.FC<AuthProps> = ({ onLogin }) => {
       });
 
       if (!tokenResponse.ok) {
-        throw new Error("Invalid email or password");
+        throw new Error("Keycloak rejected credentials");
       }
 
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Save token for future API requests
+      console.log("✅ Token successfully retrieved from Keycloak!");
+
+      // 2. FORCE SAVE the token immediately (Do not use fetchWithRetry here!)
       localStorage.setItem("access_token", accessToken);
-
-      // 2. Validate token against your NestJS Backend
-    //   const backendResponse = await fetch("http://92.4.78.222/api/v1/auth/me", {
-    //     method: "GET",
-    //     headers: {
-    //       "Authorization": `Bearer ${accessToken}`
-    //     }
-    //   });
-    
-    const backendResponse = await fetchWithRetry("/auth/me", {
-       method: "GET",
-       headers: {
-          "Authorization": `Bearer ${accessToken}`
-       }
-    });
-
-      if (!backendResponse.ok) {
-        throw new Error("Backend rejected authentication");
-      }
-
-      const userData = await backendResponse.json();
-      console.log("Successfully logged in as:", userData);
-      onLogin();
+      
+      // 3. Tell App.tsx that we are officially logged in
+      onLogin(accessToken); 
+      
+      // 4. Route to the Dashboard
       navigate('/');
       
     } catch (error: any) {
       console.error("Login Error:", error);
-      alert(error.message); 
+      alert(`Login Failed: ${error.message}`); 
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-[#fbfbfa] flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">

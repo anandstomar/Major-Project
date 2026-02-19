@@ -143,9 +143,11 @@ public class IndexerService {
         if (!nullSafeEquals(existing.getStatus(), dto.status)) return true;
         if (!nullSafeEquals(existing.getTxHash(), dto.tx_hash)) return true;
         if (!nullSafeEquals(existing.getMerkleRoot(), dto.merkle_root)) return true;
-        if (existing.getBlockNumber() == null && dto.block_number != null) return true;
-        if (existing.getBlockNumber() != null && !existing.getBlockNumber().equals(dto.block_number)) return true;
-        // optionally check eventsJson changes if you want
+        // if (existing.getBlockNumber() == null && dto.block_number != null) return true;
+        // if (existing.getBlockNumber() != null && !existing.getBlockNumber().equals(dto.block_number)) return true;
+        String dtoBlockStr = dto.block_number != null ? String.valueOf(dto.block_number) : null;
+        if (!nullSafeEquals(existing.getBlockNumber(), dtoBlockStr)) return true;
+         // optionally check eventsJson changes if you want
         return false;
     }
 
