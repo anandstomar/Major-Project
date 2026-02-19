@@ -3,12 +3,12 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Install ALL dependencies (including devDependencies like TypeScript)
-COPY package.json package-lock.json* tsconfig.json ./
+COPY package.json package-lock.json* 
+COPY tsconfig.json ./
 RUN npm ci
 
 # Copy the source code and compile it
 COPY src ./src
-COPY tsconfig.json /app/tsconfig.json
 RUN npm run build
 RUN cp src/anchor_program.json dist/anchor_program.json
 
