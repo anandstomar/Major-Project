@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/anchors")
+@RequestMapping("/api/v1/indexer/api/anchors")
 public class AnchorController {
     private final AnchorRepository repo;
     public AnchorController(AnchorRepository repo) { this.repo = repo; }

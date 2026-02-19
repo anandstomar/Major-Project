@@ -31,6 +31,9 @@ jobs:
           - service: indexer  
             folder: indexer 
             dockerfile: Dockerfile
+          - service: indexer-solana
+            folder: indexer 
+            dockerfile: ./solana-listener/Dockerfile.node
           - service: ingest-service
             folder: ingest-service
             dockerfile: Dockerfile
