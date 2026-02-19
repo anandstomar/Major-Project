@@ -110,7 +110,7 @@ public class IndexerService {
         e.setRequestId(dto.request_id);
         e.setMerkleRoot(dto.merkle_root);
         e.setTxHash(dto.tx_hash);
-        e.setBlockNumber(dto.block_number);
+        e.setBlockNumber(dto.block_number != null ? String.valueOf(dto.block_number) : null);
         e.setStatus(dto.status);
         e.setSubmitter(dto.submitter);
         if (dto.submitted_at != null && !dto.submitted_at.isEmpty()) {

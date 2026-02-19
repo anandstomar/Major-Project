@@ -20,7 +20,7 @@ public class AnchorEntity {
     private String txHash;
 
     @Column(name="block_number")
-    private Long blockNumber;
+    private String blockNumber;
 
     @Column(name="status")
     private String status;
@@ -44,8 +44,8 @@ public class AnchorEntity {
     public void setMerkleRoot(String merkleRoot) { this.merkleRoot = merkleRoot; }
     public String getTxHash() { return txHash; }
     public void setTxHash(String txHash) { this.txHash = txHash; }
-    public Long getBlockNumber() { return blockNumber; }
-    public void setBlockNumber(Long blockNumber) { this.blockNumber = blockNumber; }
+    public String getBlockNumber() { return blockNumber; }
+    public void setBlockNumber(String blockNumber) { this.blockNumber = blockNumber; }
     public OffsetDateTime getSubmittedAt() { return submittedAt; }
     public void setSubmittedAt(OffsetDateTime submittedAt) { this.submittedAt = submittedAt; }
     public String getSubmitter() { return submitter; }
