@@ -4,10 +4,12 @@ image:
   pullPolicy: Always
 service:
   type: ClusterIP
-  port: 80
+  port: 8083
 imagePullSecrets:
   - name: ghcrpat
 env:
+  - name: SERVER_PORT
+    value: "8083"
   - name: DB_HOST
     value: "postgresql"
   - name: DB_USER

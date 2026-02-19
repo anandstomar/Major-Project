@@ -28,7 +28,10 @@ public class AnchorEntity {
     @Column(name="submitted_at")
     private OffsetDateTime submittedAt;
 
-    @Column(name="events", length=4000)
+    // @Column(name="events", length=4000)
+    // private String eventsJson;
+
+    @Column(name="events_json", columnDefinition="TEXT")
     private String eventsJson;
 
     @Column(name="submitter")

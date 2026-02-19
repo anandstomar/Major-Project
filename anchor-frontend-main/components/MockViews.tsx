@@ -117,9 +117,13 @@ export const Ingest = () => {
       return () => clearInterval(interval);
   }, []);
 
-  // 2. Handle Real File Uploads (Phase 1)
+// Add this reference to programmatically trigger the input
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const handleRealFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      console.log("[DEBUG] File selected:", file?.name); 
+
       if (!file) return;
 
       setIsUploading(true);
@@ -127,43 +131,50 @@ export const Ingest = () => {
 
       try {
           const token = localStorage.getItem("access_token");
-          
-          // Use FormData for file uploads
           const formData = new FormData();
           formData.append("file", file);
 
-          // Assuming your Express service has a file upload route like /api/v1/ingest/upload
-          const response = await fetchWithRetry("/ingest/upload", {
+          console.log("[DEBUG] Sending file to Express API...");
+
+          // Force the fetch to hit your specific Server IP to ensure it hits the Express Ingress
+          const response = await fetch("http://92.4.78.222/api/v1/ingest/upload", {
               method: "POST",
-              headers: { "Authorization": `Bearer ${token}` }, // Notice we DON'T set Content-Type for FormData!
+              headers: { "Authorization": `Bearer ${token}` }, // No Content-Type header! Browser sets it automatically for FormData
               body: formData
           });
 
+          console.log("[DEBUG] Response status:", response.status);
+
           if (response.ok) {
               setToast(`✅ Successfully uploaded ${file.name}`);
-              fetchJobs(true); // Refresh the table immediately
+              fetchJobs(true); // Refresh table
           } else {
               const errData = await response.json();
+              console.error("[DEBUG] Upload failed:", errData);
               setToast(`❌ Upload failed: ${errData.error || 'Unknown error'}`);
           }
       } catch (err: any) {
+          console.error("[DEBUG] Network error:", err);
           setToast(`❌ Network error: ${err.message}`);
       } finally {
           setIsUploading(false);
-          // Reset the input so the user can upload the same file again if needed
-          e.target.value = ''; 
+          if (fileInputRef.current) fileInputRef.current.value = ''; 
       }
   };
 
   const UploadTab = () => (
       <div className="max-w-5xl mx-auto space-y-10">
-          <div className="relative border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all group">
-              {/* Hidden file input layered over the box */}
+          <div 
+              // 👇 Clicking anywhere in this box triggers the hidden input!
+              onClick={() => !isUploading && fileInputRef.current?.click()}
+              className="relative border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all cursor-pointer group"
+          >
+              {/* 👇 The input is now completely hidden, controlled by React */}
               <input 
                   type="file" 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                  ref={fileInputRef}
+                  className="hidden" 
                   onChange={handleRealFileUpload}
-                  disabled={isUploading}
                   accept=".json,.csv,.avro"
               />
               
@@ -174,7 +185,15 @@ export const Ingest = () => {
                   {isUploading ? 'Uploading...' : 'Upload Manifest'}
               </h3>
               <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Drag and drop JSON, AVRO, or CSV files here to start an ingestion job. Max size 500MB.</p>
-              <button className={`mt-8 ${btnPrimary} relative z-0`} disabled={isUploading}>
+              
+              <button 
+                className={`mt-8 ${btnPrimary} relative z-0`} 
+                disabled={isUploading}
+                onClick={(e) => {
+                    e.stopPropagation(); // Prevents double-clicking
+                    fileInputRef.current?.click();
+                }}
+              >
                   {isUploading ? 'Processing...' : 'Select Files'}
               </button>
           </div>

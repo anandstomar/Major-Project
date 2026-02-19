@@ -50,6 +50,20 @@ spec:
                 name: anchoring-scheduler
                 port: 
                   number: 4100
+          - path: /api/v1/indexer
+            pathType: Prefix
+            backend:
+              service:
+                name: indexer
+                port:
+                  number: 8083
+          - path: /api/v1/indexer-solana
+            pathType: Prefix
+            backend:
+              service:
+                name: indexer-solana
+                port:
+                  number: 3000
           - path: /
             pathType: Prefix
             backend:

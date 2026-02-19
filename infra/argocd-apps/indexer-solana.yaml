@@ -13,7 +13,7 @@ spec:
     targetRevision: main
     
     # We also keep the "Direct Path" fix from before:
-    path: infra/helm-charts/indexer
+    path: infra/helm-charts/indexer-solana
   destination:
     server: https://kubernetes.default.svc
     namespace: default

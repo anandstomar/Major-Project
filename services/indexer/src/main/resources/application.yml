@@ -5,7 +5,7 @@ spring:
     password: ${DB_PASS:indexerpwd}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate #update
     show-sql: true
     properties:
       hibernate:
@@ -13,7 +13,7 @@ spring:
 
 
   kafka:
-    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BROKERS:kafka-external:9092}
     consumer:
       group-id: indexer-group
       auto-offset-reset: earliest
