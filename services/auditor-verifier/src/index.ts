@@ -53,6 +53,13 @@ async function main() {
         });
 
         console.log('published verified', msg.request_id, 'merkle_match=', result.merkle_match);
+
+        if (!result.merkle_match) {
+          console.log('🚨 MISMATCH DEBUG INFO:');
+          console.log('- Provided Root: ', result.merkle_root);
+          console.log('- Computed Root: ', result.computed_root);
+          console.log('- Auditor Notes: ', result.notes);
+        }
       } catch (err) {
         console.error('process message error', err);
       }
