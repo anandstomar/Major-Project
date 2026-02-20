@@ -7,7 +7,7 @@ export class NotificationController {
 
   @Get('health')
   checkHealth() {
-    return { status: 'ok', service: 'query-service', timestamp: new Date() };
+    return { status: 'ok', service: 'notification-service', timestamp: new Date() };
   }
 
   @Get('feed')

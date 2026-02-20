@@ -3,6 +3,7 @@ import { AnchorCompleted, VerifiedResult } from './types';
 import { getObjectBytes, putObject } from './minio';
 import { combineRootsHex } from './merkle';
 import { ethers } from 'ethers';
+import { Connection } from '@solana/web3.js';
 
 export class Processor {
   private minio: Client;
@@ -52,12 +53,27 @@ export class Processor {
     const merkleMatch = !!(req.merkle_root && computedHex && req.merkle_root.toLowerCase() === computedHex.toLowerCase());
 
     // 2) optional on-chain tx existence check
+    // let txExists = false;
+    // if (this.rpc && req.tx_hash) {
+    //   try {
+    //     const provider = new ethers.JsonRpcProvider(this.rpc);
+    //     const tx = await provider.getTransaction(req.tx_hash);
+    //     txExists = !!tx;
+    //   } catch (e) {
+    //     notes.push('rpc check failed: ' + String(e));
+    //   }
+    // }
+
     let txExists = false;
     if (this.rpc && req.tx_hash) {
       try {
-        const provider = new ethers.JsonRpcProvider(this.rpc);
-        const tx = await provider.getTransaction(req.tx_hash);
-        txExists = !!tx;
+        const connection = new Connection(this.rpc);
+        // Query the Solana RPC for the transaction signature
+        const tx = await connection.getTransaction(req.tx_hash, {
+          maxSupportedTransactionVersion: 0 
+        });
+        
+        txExists = !!tx; // If tx is not null, it exists on the Solana chain
       } catch (e) {
         notes.push('rpc check failed: ' + String(e));
       }

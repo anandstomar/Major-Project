@@ -3,7 +3,7 @@ import {
   UploadCloud, List, Code, PlayCircle, PauseCircle, FolderTree, Database, 
   Search as SearchIcon, Bell, Settings as SettingsIcon, Shield, Key, User,
   FileJson, Clock, RefreshCw, FileText, Activity, Cpu, Trash2, Plus, ArrowRight, Copy,
-  CheckCircle, XCircle, AlertCircle, ShieldAlert, 
+  CheckCircle, XCircle, AlertCircle, ShieldAlert, X, CheckCircle2, Sparkles
 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Status } from '../types';
@@ -11,6 +11,16 @@ import { Modal } from './ui/Modal';
 import { IllusUpload, IllusTree } from './ui/Assets';
 import { Toast } from './ui/Toast';
 import { fetchWithRetry } from '../utils/api';
+import { createChatSession, sendMessageToChat } from '../services/geminiService';
+
+const getIconConfig = (type: string) => {
+  switch (type?.toLowerCase()) {
+    case 'success': return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' };
+    case 'warning': return { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' };
+    case 'error': return { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50 border-red-100' };
+    default: return { icon: Bell, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' };
+  }
+};
 
 
 const Tabs = ({ tabs }: { tabs: { id: string, label: string, icon: any, content: React.ReactNode }[] }) => {
@@ -1633,7 +1643,72 @@ export const Notifications = () => {
   );
 };
 
-const ActivityFeedTab = () => {
+const NotificationItem = ({ n, idx }: { n: any, idx: number }) => {
+  const [aiSummary, setAiSummary] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(true);
+  const config = getIconConfig(n.type);
+  const Icon = config.icon;
+
+  useEffect(() => {
+    // ... your existing useEffect code stays exactly the same ...
+    const fetchAiSummary = async () => {
+      const rawText = n.description || n.desc;
+      if (!rawText) {
+        setAiSummary('No details provided.');
+        setIsSummarizing(false);
+        return;
+      }
+
+      try {
+        const chat = createChatSession();
+        const prompt = `Rewrite this technical blockchain log into a simple, friendly, one-sentence summary (max 10 words). Strip out the long hashes completely. Do not include quotes or conversational prefixes. Log: ${rawText}`;
+        
+        const response = await sendMessageToChat(chat, prompt);
+        setAiSummary(response);
+      } catch (err) {
+        console.error("AI summarization failed, falling back to raw text:", err);
+        setAiSummary(rawText); 
+      } finally {
+        setIsSummarizing(false);
+      }
+    };
+
+    fetchAiSummary();
+  }, [n.description, n.desc]);
+
+  return (
+    // 👇 FIX: Removed idx logic, added border-l-transparent and hover:border-l-[#BE3F2F]
+    <div className="relative flex gap-4 p-5 bg-white border border-[#e8e6e3] border-l-4 border-l-transparent hover:border-l-[#BE3F2F] shadow-sm transition-colors duration-200">
+        <div className={`flex items-center justify-center p-2 rounded-full border w-10 h-10 flex-shrink-0 ${config.bg}`}>
+            <Icon className={config.color} size={20} strokeWidth={2} />
+        </div>
+        <div className="flex-1">
+            <h4 className="text-[14px] font-semibold text-[#1f1e1d] mb-1">
+              {n.title}
+            </h4>
+            
+            {isSummarizing ? (
+              <p className="text-[13px] text-[#8c8b88] flex items-center gap-1.5 animate-pulse">
+                <Sparkles size={14} className="text-[#BE3F2F]" /> 
+                AI is generating summary...
+              </p>
+            ) : (
+              <p className="text-[13px] text-[#5d5c58]">
+                {aiSummary}
+              </p>
+            )}
+        </div>
+        <div className="flex-shrink-0">
+            <span className="text-[12px] text-[#a8a29e]">
+                {n.timestamp ? new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : n.time || 'Just now'}
+            </span>
+        </div>
+    </div>
+  );
+};
+
+// --- Main Feed Component ---
+export const ActivityFeedTab = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -1641,8 +1716,7 @@ const ActivityFeedTab = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      // Calls the new NGINX Ingress route
-      const res = await fetchWithRetry('/notifications/api/feed', {
+      const res = await fetchWithRetry('/notifications/feed', {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1660,57 +1734,34 @@ const ActivityFeedTab = () => {
     loadNotifications();
   }, []);
 
-  // Helper function to map backend types to UI colors/icons
-  const getIconConfig = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case 'success': return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' };
-      case 'warning': return { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' };
-      case 'error': return { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50 border-red-100' };
-      default: return { icon: Bell, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' };
-    }
-  };
-
   return (
-    <div className="max-w-4xl mx-auto space-y-4 relative">
+    <div className="max-w-4xl mx-auto space-y-4 relative mt-2">
       {loading && notifications.length === 0 ? (
         <div className="flex justify-center py-12">
             <RefreshCw className="animate-spin text-[#d6d3d0]" size={24} />
         </div>
       ) : notifications.length === 0 ? (
-        <div className="text-center py-12 text-[#8c8b88] border border-dashed border-[#d6d3d0] rounded-xl">
-            <Bell className="mx-auto mb-3 opacity-20" size={32} />
+        <div className="text-center py-16 text-[#8c8b88] border border-[#e8e6e3] bg-[#fcfbfb]">
+            <Bell className="mx-auto mb-4 opacity-20" size={32} />
             <p className="text-sm">No recent activity found.</p>
         </div>
       ) : (
         <>
-            <div className="absolute -top-12 right-0">
-                <button onClick={loadNotifications} className="text-[#8c8b88] hover:text-[#1f1e1d] transition-colors p-2">
+            <div className="absolute -top-12 right-0 z-10">
+                <button 
+                  onClick={loadNotifications} 
+                  className="text-[#8c8b88] hover:text-[#1f1e1d] transition-colors p-2"
+                >
                     <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                 </button>
             </div>
-            {notifications.map((n) => {
-                const config = getIconConfig(n.type);
-                const Icon = config.icon;
-                return (
-                    <div key={n.id} className="flex gap-4 p-5 bg-white border border-[#e8e6e3] rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                        <div className={`p-2.5 rounded-full border h-fit ${config.bg}`}>
-                            <Icon className={config.color} size={20} />
-                        </div>
-                        <div className="flex-1 pt-0.5">
-                            <div className="flex justify-between items-start mb-1">
-                                <h4 className="text-sm font-bold text-[#1f1e1d]">{n.title}</h4>
-                                <span className="text-xs font-medium text-[#a8a29e]">
-                                    {/* Format timestamp safely */}
-                                    {n.timestamp ? new Date(n.timestamp).toLocaleTimeString() : 'Just now'}
-                                </span>
-                            </div>
-                            <p className="text-sm text-[#5d5c58]">{n.description || n.desc}</p>
-                        </div>
-                    </div>
-                );
-            })}
             
-            <button className="w-full py-4 mt-6 text-sm font-bold text-[#5d5c58] bg-[#f8f7f6] hover:bg-[#f1f0ee] border border-[#e8e6e3] rounded-xl transition-colors tracking-wide">
+            {/* Render AI-Powered Items */}
+            {notifications.map((n, idx) => (
+                <NotificationItem key={n.id || idx} n={n} idx={idx} />
+            ))}
+            
+            <button className="w-full py-3.5 mt-6 text-[13px] font-bold text-[#5d5c58] bg-white border border-[#e8e6e3] hover:bg-[#fcfbfb] transition-colors tracking-wide shadow-sm">
                 LOAD OLDER NOTIFICATIONS
             </button>
         </>
@@ -1722,12 +1773,21 @@ const ActivityFeedTab = () => {
 const AlertRulesTab = () => {
   const [rules, setRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // NEW: State for the Create Modal
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    condition: '',
+    severity: 'Warning',
+    channel: ''
+  });
 
   const loadRules = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetchWithRetry('/api/v1/notifications/rules', {
+      const res = await fetchWithRetry('/notifications/rules', {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1745,40 +1805,33 @@ const AlertRulesTab = () => {
     loadRules();
   }, []);
 
-  // 👇 ACTUAL CREATE FUNCTION
-  const handleCreateRule = async () => {
-    // In a real app, this would open a modal with a form. 
-    // For now, we'll create a real rule programmatically.
-    const newRulePayload = {
-      name: `Custom Rule ${Math.floor(Math.random() * 1000)}`,
-      condition: 'status=FAILED',
-      severity: 'Critical',
-      channel: 'Slack #alerts'
-    };
-
+  // NEW: Handles the actual form submission from the modal
+  const handleCreateRule = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent page reload
     const token = localStorage.getItem("access_token");
-    await fetchWithRetry('/api/v1/notifications/rules', {
+    
+    await fetchWithRetry('/notifications/rules', {
       method: 'POST',
       headers: { 
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(newRulePayload)
+      // Sends the actual data you typed into the form!
+      body: JSON.stringify(formData) 
     });
     
-    // Refresh the table!
+    // Close modal, reset form, and refresh table
+    setShowModal(false);
+    setFormData({ name: '', condition: '', severity: 'Warning', channel: '' });
     loadRules();
   };
 
-  // 👇 ACTUAL DELETE FUNCTION
   const handleDeleteRule = async (id: number) => {
     const token = localStorage.getItem("access_token");
-    await fetchWithRetry(`/api/v1/notifications/rules/${id}`, {
+    await fetchWithRetry(`/notifications/rules/${id}`, {
       method: 'DELETE',
       headers: { "Authorization": `Bearer ${token}` }
     });
-    
-    // Refresh the table!
     loadRules();
   };
 
@@ -1792,10 +1845,13 @@ const AlertRulesTab = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    // FIX: Changed "max-w-5xl mx-auto" to "w-full" so the table fills the screen
+    <div className="w-full">
       <div className="flex justify-end mb-6">
-        {/* 👇 Hooked up the create button */}
-        <button onClick={handleCreateRule} className="bg-[#BE3F2F] hover:bg-[#a63529] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+        <button 
+          onClick={() => setShowModal(true)} 
+          className="bg-[#BE3F2F] hover:bg-[#a63529] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
+        >
           <Plus size={16} /> Create Alert Rule
         </button>
       </div>
@@ -1836,8 +1892,7 @@ const AlertRulesTab = () => {
                     <td className="p-4 text-sm text-[#5d5c58]">{rule.channel}</td>
                     <td className="p-4 pr-6">
                         <div className="flex justify-end gap-3 text-[#a8a29e] opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Settings size={18} className="cursor-pointer hover:text-[#1f1e1d] transition-colors" />
-                        {/* 👇 Hooked up the delete button */}
+                        <SettingsIcon size={18} className="cursor-pointer hover:text-[#1f1e1d] transition-colors" />
                         <Trash2 onClick={() => handleDeleteRule(rule.id)} size={18} className="cursor-pointer hover:text-[#BE3F2F] transition-colors" />
                         </div>
                     </td>
@@ -1847,6 +1902,89 @@ const AlertRulesTab = () => {
             </table>
         )}
       </div>
+
+      {/* NEW: The Create Rule Modal Overlay */}
+      {showModal && (
+        <div className="fixed inset-0 bg-[#1f1e1d]/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-5 border-b border-[#e8e6e3] bg-[#fcfbfb]">
+              <h3 className="font-bold text-[#1f1e1d]">Create Alert Rule</h3>
+              <button onClick={() => setShowModal(false)} className="text-[#8c8b88] hover:text-[#1f1e1d] transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateRule} className="p-6 space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-[#8c8b88] uppercase mb-1.5">Rule Name</label>
+                <input 
+                  required 
+                  type="text" 
+                  value={formData.name} 
+                  onChange={e => setFormData({...formData, name: e.target.value})} 
+                  className="w-full p-2.5 border border-[#e8e6e3] rounded-lg text-sm focus:outline-none focus:border-[#BE3F2F] transition-colors" 
+                  placeholder="e.g., High P99 Latency" 
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-[#8c8b88] uppercase mb-1.5">Condition Pattern</label>
+                <input 
+                  required 
+                  type="text" 
+                  value={formData.condition} 
+                  onChange={e => setFormData({...formData, condition: e.target.value})} 
+                  className="w-full p-2.5 border border-[#e8e6e3] rounded-lg text-sm font-mono focus:outline-none focus:border-[#BE3F2F] transition-colors" 
+                  placeholder="e.g., p99 > 500ms" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-bold text-[#8c8b88] uppercase mb-1.5">Severity</label>
+                  <select 
+                    value={formData.severity} 
+                    onChange={e => setFormData({...formData, severity: e.target.value})} 
+                    className="w-full p-2.5 border border-[#e8e6e3] rounded-lg text-sm focus:outline-none focus:border-[#BE3F2F] transition-colors bg-white"
+                  >
+                    <option value="Info">Info</option>
+                    <option value="Warning">Warning</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#8c8b88] uppercase mb-1.5">Delivery Channel</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={formData.channel} 
+                    onChange={e => setFormData({...formData, channel: e.target.value})} 
+                    className="w-full p-2.5 border border-[#e8e6e3] rounded-lg text-sm focus:outline-none focus:border-[#BE3F2F] transition-colors" 
+                    placeholder="e.g., Slack #ops" 
+                  />
+                </div>
+              </div>
+              
+              <div className="pt-2 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)} 
+                  className="px-5 py-2.5 text-sm font-medium text-[#5d5c58] hover:text-[#1f1e1d] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2.5 bg-[#BE3F2F] text-white rounded-lg text-sm font-medium hover:bg-[#a63529] transition-colors shadow-sm"
+                >
+                  Save Rule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

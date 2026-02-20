@@ -1,7 +1,8 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { SearchResult } from "../types";
 
-const API_KEY = process.env.API_KEY || '';
+const API_KEY = import.meta.env.VITE_API_KEY || 'AIzaSyC_UQLKTRNapD4Zo5K4WcO3_Ju3Ovy9T0g';
+console.log("Using API Key:", API_KEY)
 
 // Initialize client only if key exists (handled gracefully in UI if missing)
 const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
@@ -14,7 +15,7 @@ export const createChatSession = () => {
   if (!ai) throw new Error("API Key missing");
   
   return ai.chats.create({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-2.5-flash',
     config: {
       systemInstruction: "You are an intelligent assistant for the Anchor Enterprise Console. You help operators debug anchor failures, explain complex Merkle proofs, and suggest SQL queries for the indexer. Keep answers concise and technical.",
     }
