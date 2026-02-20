@@ -5,8 +5,9 @@ import crypto from 'crypto';
  */
 export function hashLeaf(hexRoot: string): Buffer {
   const h = hexRoot.startsWith('0x') ? hexRoot.slice(2) : hexRoot;
-  const bytes = Buffer.from(h, 'hex');
-  return crypto.createHash('sha256').update(bytes).digest();
+  // const bytes = Buffer.from(h, 'hex');
+  // return crypto.createHash('sha256').update(bytes).digest();
+  return Buffer.from(h, 'hex');
 }
 
 /**

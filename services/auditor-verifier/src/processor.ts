@@ -50,7 +50,7 @@ export class Processor {
       notes.push(`compute error: ${String(err)}`);
     }
 
-    const merkleMatch = !!(req.merkle_root && computedHex && req.merkle_root.toLowerCase() === computedHex.toLowerCase());
+    // const merkleMatch = !!(req.merkle_root && computedHex && req.merkle_root.toLowerCase() === computedHex.toLowerCase());
 
     // 2) optional on-chain tx existence check
     // let txExists = false;
@@ -63,6 +63,11 @@ export class Processor {
     //     notes.push('rpc check failed: ' + String(e));
     //   }
     // }
+
+    const cleanProvided = (req.merkle_root || '').replace(/^0x/i, '').toLowerCase();
+    const cleanComputed = (computedHex || '').replace(/^0x/i, '').toLowerCase();
+
+    const merkleMatch = !!(cleanProvided && cleanComputed && cleanProvided === cleanComputed);
 
     let txExists = false;
     if (this.rpc && req.tx_hash) {

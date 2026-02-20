@@ -1,7 +1,7 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { SearchResult } from "../types";
 
-const API_KEY = import.meta.env.VITE_API_KEY || 'AIzaSyC_UQLKTRNapD4Zo5K4WcO3_Ju3Ovy9T0g';
+const API_KEY = import.meta.env.VITE_API_KEY || "";
 console.log("Using API Key:", API_KEY)
 
 // Initialize client only if key exists (handled gracefully in UI if missing)
