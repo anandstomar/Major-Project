@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["vite/client","node"],
+    "types": ["node"],
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
@@ -23,6 +23,5 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite-env.d.ts"]
+  }
 }
