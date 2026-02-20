@@ -57,6 +57,13 @@ spec:
                 name: indexer
                 port:
                   number: 8083
+          - path: /api/v1/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 3000
           - path: /
             pathType: Prefix
             backend:

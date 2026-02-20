@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: opensearch
-        image: opensearchproject/opensearch:2.11.0
+        image: docker.io/opensearchproject/opensearch:2.11.0
         ports:
         - containerPort: 9200
           name: rest

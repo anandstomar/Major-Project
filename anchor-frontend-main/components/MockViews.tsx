@@ -1027,7 +1027,7 @@ const OpenSearchTab = () => {
           try {
               const token = localStorage.getItem("access_token");
               // Assuming your Java Indexer will expose a /api/search endpoint for OpenSearch
-              const response = await fetchWithRetry(`/indexer/api/search?q=${encodeURIComponent(query)}`, {
+              const response = await fetchWithRetry(`/indexer/api/anchors/search?q=${encodeURIComponent(query)}`, {
                   headers: { "Authorization": `Bearer ${token}` }
               });
 
@@ -1087,19 +1087,47 @@ const OpenSearchTab = () => {
                               Found {results.length} Results
                           </p>
                           {results.map((result, idx) => (
-                              <Card key={idx} className="p-5 hover:border-[#BE3F2F]/30 transition-colors">
-                                  <div className="flex justify-between items-start mb-2">
-                                      <h3 className="text-[#BE3F2F] font-mono text-sm font-medium">
-                                          {result.requestId || 'Unknown Request ID'}
+                              <Card key={idx} className="p-5 border border-[#d6d3d0] shadow-sm hover:border-[#BE3F2F]/40 transition-all duration-200">
+                                  {/* Header: Request ID and Score */}
+                                  <div className="flex justify-between items-start mb-4 border-b border-[#f1f0ee] pb-3">
+                                      <h3 className="text-[#BE3F2F] font-mono text-sm font-semibold flex items-center gap-2">
+                                          {result.requestId || result.request_id || 'Unknown Request ID'}
                                       </h3>
-                                      <span className="text-[10px] bg-[#f1f0ee] text-[#5d5c58] px-2 py-1 rounded uppercase font-bold">
-                                          Score: {result.score || 'N/A'}
+                                      <span 
+                                        className="text-[10px] bg-[#f1f0ee] text-[#5d5c58] px-2 py-1 rounded uppercase font-bold tracking-wider" 
+                                        title="OpenSearch BM25 Relevance Score"
+                                      >
+                                          Score: {result.score ? Number(result.score).toFixed(2) : 'N/A'}
                                       </span>
                                   </div>
-                                  <p className="text-sm text-[#5d5c58] line-clamp-2">
-                                      {/* Assuming your backend returns a highlighted snippet or raw data string */}
-                                      {result.snippet || JSON.stringify(result.data || result)}
-                                  </p>
+                                  
+                                  {/* Body: Parsed JSON Data Grid */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                          <span className="block text-[10px] font-bold text-[#8c8b88] uppercase tracking-wider mb-1">
+                                              Transaction Hash
+                                          </span>
+                                          <span className="font-mono text-xs text-[#1f1e1d] break-all bg-[#f8f7f6] p-2 rounded block border border-[#e8e6e3]">
+                                              {result.tx_hash || 'Pending...'}
+                                          </span>
+                                      </div>
+                                      <div>
+                                          <span className="block text-[10px] font-bold text-[#8c8b88] uppercase tracking-wider mb-1">
+                                              Merkle Root
+                                          </span>
+                                          <span className="font-mono text-xs text-[#1f1e1d] break-all bg-[#f8f7f6] p-2 rounded block border border-[#e8e6e3]">
+                                              {result.merkle_root || 'N/A'}
+                                          </span>
+                                      </div>
+                                      <div>
+                                          <span className="block text-[10px] font-bold text-[#8c8b88] uppercase tracking-wider mb-1">
+                                              Block Number
+                                          </span>
+                                          <span className="font-mono text-xs font-medium text-[#1f1e1d]">
+                                              {result.block_number && result.block_number !== "null" ? result.block_number : 'Awaiting Confirmation'}
+                                          </span>
+                                      </div>
+                                  </div>
                               </Card>
                           ))}
                       </div>

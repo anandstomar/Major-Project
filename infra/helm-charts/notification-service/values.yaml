@@ -4,7 +4,7 @@ image:
   pullPolicy: Always
 service:
   type: ClusterIP
-  port: 80
+  port: 3000
 imagePullSecrets:
   - name: ghcrpat
 env:
@@ -12,3 +12,19 @@ env:
     value: "kafka-external:9092"
   - name: KAFKA_CLIENT_ID
     value: "notification-service"
+  - name: KAFKA_TOPIC
+    value: "anchors.completed"
+  - name: KAFKA_GROUP_ID
+    value: "notification-group"
+  - name: SMTP_HOST
+    value: "mailhog.default.svc.cluster.local"
+  - name: SMTP_PORT
+    value: "1025"
+  - name: NOTIFY_EMAIL_TO
+    value: "anandsinghtomar25@gmail.com"
+  - name: GMAIL_USER
+    value: "anandsinghtomar25@gmail.com"
+  - name: GMAIL_APP_PASSWORD
+    value: "mzii mbxm dtcz rjwy"
+  - name: PORT
+    value: "3000"
