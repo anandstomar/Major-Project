@@ -8,30 +8,29 @@ service:
 imagePullSecrets:
   - name: ghcrpat
 env:
-  env:
-    - name: KAFKA_BROKERS
-      value: "kafka-external:9092"
-    - name: KAFKA_CLIENT_ID
-      value: "auditor-verifier"
-    - name: KAFKA_GROUP_ID
-      value: "auditor-group"
-    - name: INPUT_TOPIC
-      value: "anchors.completed"
-    - name: OUTPUT_TOPIC
-      value: "anchors.verified"
-    - name: MINIO_ENDPOINT
-      value: "minio.default.svc.cluster.local"
-    - name: MINIO_PORT
-      value: "9000"
-    - name: MINIO_USE_SSL
-      value: "false"
-    - name: MINIO_ACCESS_KEY
-      value: "minioadmin"
-    - name: MINIO_SECRET_KEY
-      value: "minioadmin"
-    - name: MINIO_BUCKET
-      value: "ingest"
-    - name: VERIFIED_PREFIX
-      value: "verified"
-    - name: ANCHOR_CHAIN_RPC
-      value: "https://api.devnet.solana.com"
+  - name: KAFKA_BROKERS
+    value: "kafka-external:9092"
+  - name: KAFKA_CLIENT_ID
+    value: "auditor-verifier"
+  - name: KAFKA_GROUP_ID
+    value: "auditor-group"
+  - name: INPUT_TOPIC
+    value: "anchors.completed"
+  - name: OUTPUT_TOPIC
+    value: "anchors.verified"
+  - name: MINIO_ENDPOINT
+    value: "minio.default.svc.cluster.local"
+  - name: MINIO_PORT
+    value: "9000"
+  - name: MINIO_USE_SSL
+    value: "false"
+  - name: MINIO_ACCESS_KEY
+    value: "minioadmin"
+  - name: MINIO_SECRET_KEY
+    value: "minioadmin"
+  - name: MINIO_BUCKET
+    value: "ingest"
+  - name: VERIFIED_PREFIX
+    value: "verified"
+  - name: ANCHOR_CHAIN_RPC
+    value: "https://api.devnet.solana.com"
