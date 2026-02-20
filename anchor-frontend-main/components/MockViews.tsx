@@ -3,7 +3,7 @@ import {
   UploadCloud, List, Code, PlayCircle, PauseCircle, FolderTree, Database, 
   Search as SearchIcon, Bell, Settings as SettingsIcon, Shield, Key, User,
   FileJson, Clock, RefreshCw, FileText, Activity, Cpu, Trash2, Plus, ArrowRight, Copy,
-  CheckCircle, XCircle, AlertCircle
+  CheckCircle, XCircle, AlertCircle, ShieldAlert, 
 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Status } from '../types';
@@ -12,7 +12,6 @@ import { IllusUpload, IllusTree } from './ui/Assets';
 import { Toast } from './ui/Toast';
 import { fetchWithRetry } from '../utils/api';
 
-// --- Reusable Components ---
 
 const Tabs = ({ tabs }: { tabs: { id: string, label: string, icon: any, content: React.ReactNode }[] }) => {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
@@ -1594,195 +1593,456 @@ export const Analytics = () => {
     );
 };
 
+
 export const Notifications = () => {
-    const [toast, setToast] = useState<string | null>(null);
-    const [notifications, setNotifications] = useState([
-         { title: 'Batch #3012 Successfully Anchored', desc: 'The batch was confirmed on Solana block 229102.', time: '2 mins ago', type: 'success' },
-         { title: 'High Latency Warning', desc: 'Ingestion endpoint p99 latency exceeded 200ms for 5 minutes.', time: '1 hour ago', type: 'warning' },
-         { title: 'New Schema Registered', desc: 'User "jdoe" registered schema "UserEvent v1.3.0".', time: '3 hours ago', type: 'info' },
-         { title: 'Validator Connection Lost', desc: 'Connection to Validator Service pod-2 timed out.', time: 'Yesterday', type: 'error' },
-    ]);
+  const [activeTab, setActiveTab] = useState<'feed' | 'rules'>('feed');
 
-    const handleLoadMore = () => {
-        setNotifications(prev => [
-            ...prev,
-            { title: 'System Maintenance Completed', desc: 'Scheduled maintenance for DB cluster finished.', time: '2 days ago', type: 'info' },
-            { title: 'API Key Expiring', desc: 'Service account "Mobile App" token expires in 3 days.', time: '2 days ago', type: 'warning' }
-        ]);
-        setToast("Loaded 2 older notifications");
+  return (
+    <div className="flex flex-col h-full animate-in fade-in duration-500">
+      {/* Tabs Header */}
+      <div className="flex gap-8 border-b border-[#e8e6e3] mb-8">
+        <button
+          onClick={() => setActiveTab('feed')}
+          className={`flex items-center gap-2 pb-3 font-medium text-sm transition-all border-b-2 ${
+            activeTab === 'feed'
+              ? 'border-[#BE3F2F] text-[#BE3F2F]'
+              : 'border-transparent text-[#8c8b88] hover:text-[#1f1e1d]'
+          }`}
+        >
+          <Bell size={18} />
+          Activity Feed
+        </button>
+        <button
+          onClick={() => setActiveTab('rules')}
+          className={`flex items-center gap-2 pb-3 font-medium text-sm transition-all border-b-2 ${
+            activeTab === 'rules'
+              ? 'border-[#BE3F2F] text-[#BE3F2F]'
+              : 'border-transparent text-[#8c8b88] hover:text-[#1f1e1d]'
+          }`}
+        >
+          <ShieldAlert size={18} />
+          Alert Rules
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto pr-4">
+        {activeTab === 'feed' ? <ActivityFeedTab /> : <AlertRulesTab />}
+      </div>
+    </div>
+  );
+};
+
+const ActivityFeedTab = () => {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      // Calls the new NGINX Ingress route
+      const res = await fetchWithRetry('/notifications/api/feed', {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data || []);
+      }
+    } catch (e) {
+      console.error("Failed to load notifications:", e);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const FeedTab = () => (
-        <div className="max-w-3xl mx-auto space-y-4">
-             {notifications.map((notif, i) => (
-                 <Card key={i} className="p-4 flex gap-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-[#BE3F2F]">
-                     <div className={`mt-1 p-2 rounded-full h-fit border ${
-                         notif.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                         notif.type === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                         notif.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
-                         'bg-blue-50 text-blue-700 border-blue-200'
-                     }`}>
-                         {notif.type === 'success' ? <CheckCircle size={18} /> :
-                          notif.type === 'warning' ? <AlertCircle size={18} /> :
-                          notif.type === 'error' ? <AlertCircle size={18} /> :
-                          <Bell size={18} />}
-                     </div>
-                     <div className="flex-1">
-                         <div className="flex justify-between items-start">
-                             <h4 className="font-semibold text-[#1f1e1d] text-sm">{notif.title}</h4>
-                             <span className="text-xs text-[#8c8b88]">{notif.time}</span>
-                         </div>
-                         <p className="text-sm text-[#5d5c58] mt-1">{notif.desc}</p>
-                     </div>
-                 </Card>
-             ))}
-             <button onClick={handleLoadMore} className="w-full py-2.5 text-sm text-[#5d5c58] hover:text-[#1f1e1d] border border-[#d6d3d0] rounded hover:bg-[#fbfbfa] transition-colors uppercase tracking-wide font-medium">Load Older Notifications</button>
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  // Helper function to map backend types to UI colors/icons
+  const getIconConfig = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'success': return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' };
+      case 'warning': return { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' };
+      case 'error': return { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50 border-red-100' };
+      default: return { icon: Bell, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' };
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-4 relative">
+      {loading && notifications.length === 0 ? (
+        <div className="flex justify-center py-12">
+            <RefreshCw className="animate-spin text-[#d6d3d0]" size={24} />
         </div>
-    );
-
-    const [alertRules, setAlertRules] = useState([
-        { id: 1, name: 'Anchor Failure Rate', cond: '> 1% failures / 5m', sev: 'Critical', chan: 'Slack #ops-alerts' },
-        { id: 2, name: 'High Ingest Latency', cond: 'p99 > 500ms', sev: 'Warning', chan: 'Email' },
-        { id: 3, name: 'Batch Stuck', cond: 'status=PENDING > 30m', sev: 'High', chan: 'PagerDuty' },
-    ]);
-    const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
-    const [newRule, setNewRule] = useState({ name: '', cond: '', sev: 'Warning', chan: 'Email' });
-
-    const handleCreateRule = () => {
-        if (!newRule.name || !newRule.cond) return;
-        setAlertRules([{ id: Date.now(), ...newRule }, ...alertRules]);
-        setToast(`Alert rule '${newRule.name}' created`);
-        setIsRuleModalOpen(false);
-        setNewRule({ name: '', cond: '', sev: 'Warning', chan: 'Email' });
-    };
-
-    const AlertsTab = () => (
-        <div>
-            <div className="flex justify-end mb-6">
-                <button 
-                    onClick={() => setIsRuleModalOpen(true)}
-                    className={btnPrimary}
-                >
-                    <span className="flex items-center gap-2"><Plus size={16} /> Create Alert Rule</span>
+      ) : notifications.length === 0 ? (
+        <div className="text-center py-12 text-[#8c8b88] border border-dashed border-[#d6d3d0] rounded-xl">
+            <Bell className="mx-auto mb-3 opacity-20" size={32} />
+            <p className="text-sm">No recent activity found.</p>
+        </div>
+      ) : (
+        <>
+            <div className="absolute -top-12 right-0">
+                <button onClick={loadNotifications} className="text-[#8c8b88] hover:text-[#1f1e1d] transition-colors p-2">
+                    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                 </button>
             </div>
-            <Card className="overflow-hidden">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Rule Name</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Condition</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Severity</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Channel</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#f1f0ee]">
-                        {alertRules.map((rule) => (
-                            <tr key={rule.id} className="hover:bg-[#fcfbf9]">
-                                <td className="px-6 py-4 font-medium text-[#1f1e1d]">{rule.name}</td>
-                                <td className="px-6 py-4 text-[#5d5c58] font-mono text-xs">{rule.cond}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                                        rule.sev === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' :
-                                        rule.sev === 'High' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                        'bg-amber-50 text-amber-700 border-amber-200'
-                                    }`}>{rule.sev}</span>
-                                </td>
-                                <td className="px-6 py-4 text-[#5d5c58]">{rule.chan}</td>
-                                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                    <button className="p-1.5 text-[#8c8b88] hover:text-[#BE3F2F] hover:bg-[#f4f2f0] rounded"><SettingsIcon size={14} /></button>
-                                    <button 
-                                        onClick={() => {
-                                            setAlertRules(prev => prev.filter(r => r.id !== rule.id));
-                                            setToast("Rule deleted");
-                                        }}
-                                        className="p-1.5 text-[#8c8b88] hover:text-red-600 hover:bg-red-50 rounded"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </Card>
-
-            <Modal
-                isOpen={isRuleModalOpen}
-                onClose={() => setIsRuleModalOpen(false)}
-                title="Create Alert Rule"
-                footer={
-                    <>
-                        <button onClick={() => setIsRuleModalOpen(false)} className={btnSecondary}>Cancel</button>
-                        <button onClick={handleCreateRule} className={btnPrimary}>Create Rule</button>
-                    </>
-                }
-            >
-                <div className="space-y-5">
-                    <div>
-                        <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Rule Name</label>
-                        <input 
-                            type="text" 
-                            placeholder="e.g. High Error Rate"
-                            className={formInputClass}
-                            value={newRule.name}
-                            onChange={e => setNewRule({...newRule, name: e.target.value})}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Condition (PromQL / SQL)</label>
-                        <input 
-                            type="text" 
-                            placeholder="rate(http_requests_total[5m]) > 100"
-                            className={formInputClass}
-                            value={newRule.cond}
-                            onChange={e => setNewRule({...newRule, cond: e.target.value})}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Severity</label>
-                            <select 
-                                className={formInputClass}
-                                value={newRule.sev}
-                                onChange={e => setNewRule({...newRule, sev: e.target.value})}
-                            >
-                                <option>Warning</option>
-                                <option>High</option>
-                                <option>Critical</option>
-                            </select>
+            {notifications.map((n) => {
+                const config = getIconConfig(n.type);
+                const Icon = config.icon;
+                return (
+                    <div key={n.id} className="flex gap-4 p-5 bg-white border border-[#e8e6e3] rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className={`p-2.5 rounded-full border h-fit ${config.bg}`}>
+                            <Icon className={config.color} size={20} />
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Channel</label>
-                            <select 
-                                className={formInputClass}
-                                value={newRule.chan}
-                                onChange={e => setNewRule({...newRule, chan: e.target.value})}
-                            >
-                                <option>Email</option>
-                                <option>Slack</option>
-                                <option>PagerDuty</option>
-                                <option>Webhook</option>
-                            </select>
+                        <div className="flex-1 pt-0.5">
+                            <div className="flex justify-between items-start mb-1">
+                                <h4 className="text-sm font-bold text-[#1f1e1d]">{n.title}</h4>
+                                <span className="text-xs font-medium text-[#a8a29e]">
+                                    {/* Format timestamp safely */}
+                                    {n.timestamp ? new Date(n.timestamp).toLocaleTimeString() : 'Just now'}
+                                </span>
+                            </div>
+                            <p className="text-sm text-[#5d5c58]">{n.description || n.desc}</p>
                         </div>
                     </div>
-                </div>
-            </Modal>
-        </div>
-    );
-
-    const tabs = [
-        { id: 'feed', label: 'Activity Feed', icon: Bell, content: <FeedTab /> },
-        { id: 'alerts', label: 'Alert Rules', icon: Shield, content: <AlertsTab /> },
-    ];
-    return (
-    <>
-        <Tabs tabs={tabs} />
-        <Toast message={toast} onClose={() => setToast(null)} />
-    </>
-    );
+                );
+            })}
+            
+            <button className="w-full py-4 mt-6 text-sm font-bold text-[#5d5c58] bg-[#f8f7f6] hover:bg-[#f1f0ee] border border-[#e8e6e3] rounded-xl transition-colors tracking-wide">
+                LOAD OLDER NOTIFICATIONS
+            </button>
+        </>
+      )}
+    </div>
+  );
 };
+
+const AlertRulesTab = () => {
+  const [rules, setRules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadRules = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetchWithRetry('/api/v1/notifications/rules', {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRules(data || []);
+      }
+    } catch (e) {
+      console.error("Failed to load alert rules:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRules();
+  }, []);
+
+  // 👇 ACTUAL CREATE FUNCTION
+  const handleCreateRule = async () => {
+    // In a real app, this would open a modal with a form. 
+    // For now, we'll create a real rule programmatically.
+    const newRulePayload = {
+      name: `Custom Rule ${Math.floor(Math.random() * 1000)}`,
+      condition: 'status=FAILED',
+      severity: 'Critical',
+      channel: 'Slack #alerts'
+    };
+
+    const token = localStorage.getItem("access_token");
+    await fetchWithRetry('/api/v1/notifications/rules', {
+      method: 'POST',
+      headers: { 
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newRulePayload)
+    });
+    
+    // Refresh the table!
+    loadRules();
+  };
+
+  // 👇 ACTUAL DELETE FUNCTION
+  const handleDeleteRule = async (id: number) => {
+    const token = localStorage.getItem("access_token");
+    await fetchWithRetry(`/api/v1/notifications/rules/${id}`, {
+      method: 'DELETE',
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    
+    // Refresh the table!
+    loadRules();
+  };
+
+  const getSeverityStyle = (severity: string) => {
+      switch(severity?.toLowerCase()) {
+          case 'critical': return 'bg-red-50 text-red-700 border-red-200';
+          case 'warning': return 'bg-amber-50 text-amber-700 border-amber-200';
+          case 'high': return 'bg-orange-50 text-orange-700 border-orange-200';
+          default: return 'bg-blue-50 text-blue-700 border-blue-200';
+      }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="flex justify-end mb-6">
+        {/* 👇 Hooked up the create button */}
+        <button onClick={handleCreateRule} className="bg-[#BE3F2F] hover:bg-[#a63529] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+          <Plus size={16} /> Create Alert Rule
+        </button>
+      </div>
+
+      <div className="bg-white border border-[#e8e6e3] rounded-xl shadow-sm overflow-hidden min-h-[200px]">
+        {loading ? (
+             <div className="flex justify-center py-12">
+                 <RefreshCw className="animate-spin text-[#d6d3d0]" size={24} />
+             </div>
+        ) : rules.length === 0 ? (
+             <div className="text-center py-16 text-[#8c8b88]">
+                 <ShieldAlert className="mx-auto mb-3 opacity-20" size={32} />
+                 <p className="text-sm">No custom alert rules configured.</p>
+             </div>
+        ) : (
+            <table className="w-full text-left border-collapse">
+            <thead>
+                <tr className="border-b border-[#e8e6e3] bg-[#fcfbfb]">
+                <th className="p-4 pl-6 text-xs font-bold text-[#8c8b88] uppercase tracking-wider">Rule Name</th>
+                <th className="p-4 text-xs font-bold text-[#8c8b88] uppercase tracking-wider">Condition</th>
+                <th className="p-4 text-xs font-bold text-[#8c8b88] uppercase tracking-wider">Severity</th>
+                <th className="p-4 text-xs font-bold text-[#8c8b88] uppercase tracking-wider">Channel</th>
+                <th className="p-4 pr-6 text-xs font-bold text-[#8c8b88] uppercase tracking-wider text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e8e6e3]">
+                {rules.map((rule) => (
+                    <tr key={rule.id} className="hover:bg-[#fcfbfb] transition-colors group">
+                    <td className="p-4 pl-6 text-sm font-semibold text-[#1f1e1d]">{rule.name}</td>
+                    <td className="p-4 text-xs font-mono text-[#5d5c58] bg-[#f8f7f6] rounded px-2 py-1 w-max my-3 inline-block border border-[#e8e6e3]">
+                        {rule.condition}
+                    </td>
+                    <td className="p-4">
+                        <span className={`border px-2.5 py-1 rounded text-xs font-bold tracking-wide ${getSeverityStyle(rule.severity)}`}>
+                            {rule.severity || 'Info'}
+                        </span>
+                    </td>
+                    <td className="p-4 text-sm text-[#5d5c58]">{rule.channel}</td>
+                    <td className="p-4 pr-6">
+                        <div className="flex justify-end gap-3 text-[#a8a29e] opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Settings size={18} className="cursor-pointer hover:text-[#1f1e1d] transition-colors" />
+                        {/* 👇 Hooked up the delete button */}
+                        <Trash2 onClick={() => handleDeleteRule(rule.id)} size={18} className="cursor-pointer hover:text-[#BE3F2F] transition-colors" />
+                        </div>
+                    </td>
+                    </tr>
+                ))}
+            </tbody>
+            </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+
+
+// export const Notifications = () => {
+//     const [toast, setToast] = useState<string | null>(null);
+//     const [notifications, setNotifications] = useState([
+//          { title: 'Batch #3012 Successfully Anchored', desc: 'The batch was confirmed on Solana block 229102.', time: '2 mins ago', type: 'success' },
+//          { title: 'High Latency Warning', desc: 'Ingestion endpoint p99 latency exceeded 200ms for 5 minutes.', time: '1 hour ago', type: 'warning' },
+//          { title: 'New Schema Registered', desc: 'User "jdoe" registered schema "UserEvent v1.3.0".', time: '3 hours ago', type: 'info' },
+//          { title: 'Validator Connection Lost', desc: 'Connection to Validator Service pod-2 timed out.', time: 'Yesterday', type: 'error' },
+//     ]);
+
+//     const handleLoadMore = () => {
+//         setNotifications(prev => [
+//             ...prev,
+//             { title: 'System Maintenance Completed', desc: 'Scheduled maintenance for DB cluster finished.', time: '2 days ago', type: 'info' },
+//             { title: 'API Key Expiring', desc: 'Service account "Mobile App" token expires in 3 days.', time: '2 days ago', type: 'warning' }
+//         ]);
+//         setToast("Loaded 2 older notifications");
+//     }
+
+//     const FeedTab = () => (
+//         <div className="max-w-3xl mx-auto space-y-4">
+//              {notifications.map((notif, i) => (
+//                  <Card key={i} className="p-4 flex gap-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-[#BE3F2F]">
+//                      <div className={`mt-1 p-2 rounded-full h-fit border ${
+//                          notif.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+//                          notif.type === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+//                          notif.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
+//                          'bg-blue-50 text-blue-700 border-blue-200'
+//                      }`}>
+//                          {notif.type === 'success' ? <CheckCircle size={18} /> :
+//                           notif.type === 'warning' ? <AlertCircle size={18} /> :
+//                           notif.type === 'error' ? <AlertCircle size={18} /> :
+//                           <Bell size={18} />}
+//                      </div>
+//                      <div className="flex-1">
+//                          <div className="flex justify-between items-start">
+//                              <h4 className="font-semibold text-[#1f1e1d] text-sm">{notif.title}</h4>
+//                              <span className="text-xs text-[#8c8b88]">{notif.time}</span>
+//                          </div>
+//                          <p className="text-sm text-[#5d5c58] mt-1">{notif.desc}</p>
+//                      </div>
+//                  </Card>
+//              ))}
+//              <button onClick={handleLoadMore} className="w-full py-2.5 text-sm text-[#5d5c58] hover:text-[#1f1e1d] border border-[#d6d3d0] rounded hover:bg-[#fbfbfa] transition-colors uppercase tracking-wide font-medium">Load Older Notifications</button>
+//         </div>
+//     );
+
+//     const [alertRules, setAlertRules] = useState([
+//         { id: 1, name: 'Anchor Failure Rate', cond: '> 1% failures / 5m', sev: 'Critical', chan: 'Slack #ops-alerts' },
+//         { id: 2, name: 'High Ingest Latency', cond: 'p99 > 500ms', sev: 'Warning', chan: 'Email' },
+//         { id: 3, name: 'Batch Stuck', cond: 'status=PENDING > 30m', sev: 'High', chan: 'PagerDuty' },
+//     ]);
+//     const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+//     const [newRule, setNewRule] = useState({ name: '', cond: '', sev: 'Warning', chan: 'Email' });
+
+//     const handleCreateRule = () => {
+//         if (!newRule.name || !newRule.cond) return;
+//         setAlertRules([{ id: Date.now(), ...newRule }, ...alertRules]);
+//         setToast(`Alert rule '${newRule.name}' created`);
+//         setIsRuleModalOpen(false);
+//         setNewRule({ name: '', cond: '', sev: 'Warning', chan: 'Email' });
+//     };
+
+//     const AlertsTab = () => (
+//         <div>
+//             <div className="flex justify-end mb-6">
+//                 <button 
+//                     onClick={() => setIsRuleModalOpen(true)}
+//                     className={btnPrimary}
+//                 >
+//                     <span className="flex items-center gap-2"><Plus size={16} /> Create Alert Rule</span>
+//                 </button>
+//             </div>
+//             <Card className="overflow-hidden">
+//                 <table className="w-full text-left text-sm">
+//                     <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
+//                         <tr>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Rule Name</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Condition</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Severity</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Channel</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Actions</th>
+//                         </tr>
+//                     </thead>
+//                     <tbody className="divide-y divide-[#f1f0ee]">
+//                         {alertRules.map((rule) => (
+//                             <tr key={rule.id} className="hover:bg-[#fcfbf9]">
+//                                 <td className="px-6 py-4 font-medium text-[#1f1e1d]">{rule.name}</td>
+//                                 <td className="px-6 py-4 text-[#5d5c58] font-mono text-xs">{rule.cond}</td>
+//                                 <td className="px-6 py-4">
+//                                     <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
+//                                         rule.sev === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' :
+//                                         rule.sev === 'High' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+//                                         'bg-amber-50 text-amber-700 border-amber-200'
+//                                     }`}>{rule.sev}</span>
+//                                 </td>
+//                                 <td className="px-6 py-4 text-[#5d5c58]">{rule.chan}</td>
+//                                 <td className="px-6 py-4 text-right flex justify-end gap-2">
+//                                     <button className="p-1.5 text-[#8c8b88] hover:text-[#BE3F2F] hover:bg-[#f4f2f0] rounded"><SettingsIcon size={14} /></button>
+//                                     <button 
+//                                         onClick={() => {
+//                                             setAlertRules(prev => prev.filter(r => r.id !== rule.id));
+//                                             setToast("Rule deleted");
+//                                         }}
+//                                         className="p-1.5 text-[#8c8b88] hover:text-red-600 hover:bg-red-50 rounded"
+//                                     >
+//                                         <Trash2 size={14} />
+//                                     </button>
+//                                 </td>
+//                             </tr>
+//                         ))}
+//                     </tbody>
+//                 </table>
+//             </Card>
+
+//             <Modal
+//                 isOpen={isRuleModalOpen}
+//                 onClose={() => setIsRuleModalOpen(false)}
+//                 title="Create Alert Rule"
+//                 footer={
+//                     <>
+//                         <button onClick={() => setIsRuleModalOpen(false)} className={btnSecondary}>Cancel</button>
+//                         <button onClick={handleCreateRule} className={btnPrimary}>Create Rule</button>
+//                     </>
+//                 }
+//             >
+//                 <div className="space-y-5">
+//                     <div>
+//                         <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Rule Name</label>
+//                         <input 
+//                             type="text" 
+//                             placeholder="e.g. High Error Rate"
+//                             className={formInputClass}
+//                             value={newRule.name}
+//                             onChange={e => setNewRule({...newRule, name: e.target.value})}
+//                         />
+//                     </div>
+//                     <div>
+//                         <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Condition (PromQL / SQL)</label>
+//                         <input 
+//                             type="text" 
+//                             placeholder="rate(http_requests_total[5m]) > 100"
+//                             className={formInputClass}
+//                             value={newRule.cond}
+//                             onChange={e => setNewRule({...newRule, cond: e.target.value})}
+//                         />
+//                     </div>
+//                     <div className="grid grid-cols-2 gap-4">
+//                         <div>
+//                             <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Severity</label>
+//                             <select 
+//                                 className={formInputClass}
+//                                 value={newRule.sev}
+//                                 onChange={e => setNewRule({...newRule, sev: e.target.value})}
+//                             >
+//                                 <option>Warning</option>
+//                                 <option>High</option>
+//                                 <option>Critical</option>
+//                             </select>
+//                         </div>
+//                         <div>
+//                             <label className="block text-xs font-semibold text-[#5d5c58] mb-1.5 uppercase tracking-wide">Channel</label>
+//                             <select 
+//                                 className={formInputClass}
+//                                 value={newRule.chan}
+//                                 onChange={e => setNewRule({...newRule, chan: e.target.value})}
+//                             >
+//                                 <option>Email</option>
+//                                 <option>Slack</option>
+//                                 <option>PagerDuty</option>
+//                                 <option>Webhook</option>
+//                             </select>
+//                         </div>
+//                     </div>
+//                 </div>
+//             </Modal>
+//         </div>
+//     );
+
+//     const tabs = [
+//         { id: 'feed', label: 'Activity Feed', icon: Bell, content: <FeedTab /> },
+//         { id: 'alerts', label: 'Alert Rules', icon: Shield, content: <AlertsTab /> },
+//     ];
+//     return (
+//     <>
+//         <Tabs tabs={tabs} />
+//         <Toast message={toast} onClose={() => setToast(null)} />
+//     </>
+//     );
+// };
 
 export const Settings = () => {
     const [toast, setToast] = useState<string | null>(null);
