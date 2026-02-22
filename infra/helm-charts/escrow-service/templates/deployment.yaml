@@ -28,20 +28,23 @@ spec:
               value: "{{ .Values.env.SOLANA_RPC }}"
             - name: ESCROW_PROGRAM_ID
               value: "{{ .Values.env.ESCROW_PROGRAM_ID }}"
+            # Fixed: Pointing exactly to where the ConfigMap mounts the JSON
             - name: ESCROW_IDL_PATH
-              value: "{{ .Values.env.ESCROW_IDL_PATH }}"
+              value: "/etc/credentials/{{ .Values.env.ESCROW_SECRET_KEY }}"
             - name: KAFKA_BOOTSTRAP
               value: "{{ .Values.env.KAFKA_BOOTSTRAP }}"
             - name: KAFKA_ESCROW_TOPIC
               value: "{{ .Values.env.KAFKA_ESCROW_TOPIC }}"
+            # Fixed: Pointing exactly to where the Secret mounts the keypair
             - name: WALLET_KEYPATH
-              value: "/etc/credentials/{{ .Values.env.WALLET_SECRET_KEY }}"
+              value: "/keys/{{ .Values.env.WALLET_SECRET_KEY }}"
           volumeMounts:
             - name: escrow-json-config
               mountPath: /etc/credentials
               readOnly: true
             - name: escrow-fee-payer
               mountPath: /keys
+              readOnly: true
           resources:
             requests:
               cpu: "{{ .Values.resources.requests.cpu }}"
@@ -51,12 +54,8 @@ spec:
               memory: "{{ .Values.resources.limits.memory }}"
       volumes:
         - name: escrow-json-config
-          secret:
-            secretName: {{ .Values.env.ESCROW_SECRET_NAME }}
-            items:
-              - key: {{ .Values.env.ESCROW_SECRET_KEY }}
+          configMap:
+            name: {{ .Values.env.ESCROW_SECRET_NAME }}
         - name: escrow-fee-payer
           secret:
             secretName: {{ .Values.env.WALLET_SECRET_NAME }}
-            items:
-              - key: {{ .Values.env.WALLET_SECRET_KEY }}
