@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/validator
-  tag: 199b1da6be189439dadae1df71a80cb31277a478
+  tag: b996c4bcf22dc44635f04baf4b60d8a26bbc9a34
   pullPolicy: Always
 service:
   type: ClusterIP
