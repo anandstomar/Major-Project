@@ -1,8 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EscrowClient } from './escrow.client';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Keypair } from '@solana/web3.js';
 import { Kafka } from 'kafkajs';
-import { PrismaService } from '../prisma/prisma.service'; // Adjust path to your PrismaService
+import { PrismaService } from '../prisma/prisma.service';
+import * as fs from 'fs';
 
 @Injectable()
 export class EscrowService implements OnModuleInit {
@@ -25,25 +26,22 @@ export class EscrowService implements OnModuleInit {
     await this.kafkaProducer.connect();
     await this.kafkaConsumer.connect();
     
-    // Subscribe to the topic and start listening
     await this.kafkaConsumer.subscribe({ topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events', fromBeginning: true });
     
     await this.kafkaConsumer.run({
-      eachMessage: async ({ message }: { message: any }) => {
+      eachMessage: async ({ message }) => {
         if (!message.value) return;
         const event = JSON.parse(message.value.toString());
-        this.logger.log(`Received Kafka Event: ${event.event_type} for ${event.escrow_id}`);
         await this.handleKafkaEvent(event);
       },
     });
   }
 
-  // 👇 INDEXER LOGIC: Saves Kafka events via Prisma
   private async handleKafkaEvent(event: any) {
     if (event.event_type === 'CREATED') {
       await this.prisma.escrow.upsert({
         where: { escrowId: event.escrow_id },
-        update: {}, // Do nothing if it already exists
+        update: {},
         create: {
           escrowId: event.escrow_id,
           initializer: event.initializer,
@@ -55,27 +53,27 @@ export class EscrowService implements OnModuleInit {
         }
       });
     } 
-    else if (event.event_type === 'RELEASED' || event.event_type === 'CANCELLED') {
+    else if (['RELEASED', 'CANCELLED', 'DISPUTED'].includes(event.event_type)) {
       await this.prisma.escrow.update({
         where: { escrowId: event.escrow_id },
         data: { 
           status: event.event_type.toLowerCase(), 
-          txSig: event.tx_sig 
+          ...(event.tx_sig ? { txSig: event.tx_sig } : {})
         }
       });
     }
   }
 
-  // 👇 API LOGIC: Fetch all for the UI
   async findAll() {
-    return this.prisma.escrow.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    return this.prisma.escrow.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async findOne(id: string) {
+    return this.prisma.escrow.findUnique({ where: { escrowId: id } });
   }
 
   async createEscrow(beneficiary: string, arbiter: string, amount: number) {
     const res = await this.client.initializeEscrow(new PublicKey(beneficiary), new PublicKey(arbiter), amount);
-    
     const event = {
       escrow_id: res.escrowPda,
       initializer: this.client.provider.wallet.publicKey.toBase58(),
@@ -86,13 +84,30 @@ export class EscrowService implements OnModuleInit {
       event_type: 'CREATED',
       timestamp: new Date().toISOString(),
     };
-
-    await this.kafkaProducer.send({
-      topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events',
-      messages: [{ value: JSON.stringify(event) }],
-    });
-
+    await this.kafkaProducer.send({ topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events', messages: [{ value: JSON.stringify(event) }] });
     return event;
+  }
+
+  // 👇 Re-added releaseEscrow
+  async releaseEscrow(escrowPdaStr: string, arbiterKeyPath: string) {
+    const arbiterKey = Keypair.fromSecretKey(new Uint8Array(JSON.parse(fs.readFileSync(arbiterKeyPath, 'utf8'))));
+    const escrowPda = new PublicKey(escrowPdaStr);
+    const tx = await this.client.release(escrowPda, arbiterKey);
+    
+    const event = { escrow_id: escrowPdaStr, event_type: 'RELEASED', tx_sig: tx, timestamp: new Date().toISOString() };
+    await this.kafkaProducer.send({ topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events', messages: [{ value: JSON.stringify(event) }] });
+    return { ok: true, tx };
+  }
+
+  async raiseDispute(escrowPdaStr: string) {
+    const event = { escrow_id: escrowPdaStr, event_type: 'DISPUTED', timestamp: new Date().toISOString() };
+    await this.kafkaProducer.send({ topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events', messages: [{ value: JSON.stringify(event) }] });
+    return { ok: true };
+  }
+
+  async notifyParties(escrowPdaStr: string) {
+    this.logger.log(`Notification sent for ${escrowPdaStr}`);
+    return { ok: true };
   }
 }
 

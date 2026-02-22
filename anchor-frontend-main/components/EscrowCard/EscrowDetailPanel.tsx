@@ -64,7 +64,7 @@ export const EscrowDetailPanel: React.FC<EscrowDetailPanelProps> = ({
           </div>
         </div>
 
-        {/* Financials */}
+      {/* Financials */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-[#fbfbfa] rounded-md border border-[#e0e0dc]">
             <div className="text-xs text-[#8c8b88] uppercase tracking-wider mb-1">Amount</div>
@@ -75,10 +75,14 @@ export const EscrowDetailPanel: React.FC<EscrowDetailPanelProps> = ({
               <div className="text-xs text-[#5d5c58] mt-1">{escrow.amount.token}</div>
             )}
           </div>
+          
           <div className="p-4 bg-[#fbfbfa] rounded-md border border-[#e0e0dc]">
-            <div className="text-xs text-[#8c8b88] uppercase tracking-wider mb-1">Block Number</div>
-            <div className="text-xl font-mono font-medium text-[#1f1e1d]">
-              {escrow.blockNumber ? `#${escrow.blockNumber}` : 'Pending'}
+            <div className="text-xs text-[#8c8b88] uppercase tracking-wider mb-1">Network</div>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="text-lg font-medium text-[#1f1e1d]">
+                Solana Devnet
+              </div>
             </div>
           </div>
         </div>
@@ -113,20 +117,24 @@ export const EscrowDetailPanel: React.FC<EscrowDetailPanelProps> = ({
           <h3 className="text-sm font-medium text-[#1f1e1d]">Technical Metadata</h3>
           
           <div className="space-y-2">
-            <div className="group p-3 rounded-md bg-[#fbfbfa] border border-[#e0e0dc] flex items-center justify-between">
-              <div className="overflow-hidden">
-                <div className="text-xs text-[#8c8b88] mb-0.5">Merkle Root</div>
-                <div className="font-mono text-xs text-[#1f1e1d] truncate">
-                  {escrow.merkleRoot || 'N/A'}
+            
+            {/* 👇 Wrap the Merkle Root in this condition */}
+            {escrow.merkleRoot && (
+              <div className="group p-3 rounded-md bg-[#fbfbfa] border border-[#e0e0dc] flex items-center justify-between">
+                <div className="overflow-hidden">
+                  <div className="text-xs text-[#8c8b88] mb-0.5">Merkle Root</div>
+                  <div className="font-mono text-xs text-[#1f1e1d] truncate">
+                    {escrow.merkleRoot}
+                  </div>
                 </div>
+                <button 
+                  className="p-1.5 text-[#8c8b88] hover:text-[#1f1e1d]"
+                  onClick={() => navigator.clipboard.writeText(escrow.merkleRoot || '')}
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
-              <button 
-                className="p-1.5 text-[#8c8b88] hover:text-[#1f1e1d]"
-                onClick={() => navigator.clipboard.writeText(escrow.merkleRoot || '')}
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
+            )}
 
             <div className="group p-3 rounded-md bg-[#fbfbfa] border border-[#e0e0dc] flex items-center justify-between">
               <div className="overflow-hidden">

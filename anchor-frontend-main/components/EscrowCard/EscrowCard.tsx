@@ -54,14 +54,18 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
       className="group relative bg-white border border-[#e0e0dc] rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
       whileHover={{ y: -2 }}
     >
-      {/* Header */}
-      <div className="p-5 border-b border-[#f1f0ee] flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-sm font-medium text-[#1f1e1d]">
-              {escrow.requestId}
+     {/* Header */}
+      <div className="p-5 border-b border-[#f1f0ee] flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0 flex-1">
+          {/* 👇 Added flex-wrap here */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-sm font-medium text-[#1f1e1d] truncate" title={escrow.requestId}>
+              {escrow.requestId.length > 20 
+                ? `${escrow.requestId.slice(0, 8)}...${escrow.requestId.slice(-8)}` 
+                : escrow.requestId}
             </span>
-            <div className={cn("flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border", status.color)}>
+            {/* 👇 Added shrink-0 here to protect the badge */}
+            <div className={cn("shrink-0 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border", status.color)}>
               <StatusIcon className="w-3.5 h-3.5" />
               <span>{status.label}</span>
             </div>
@@ -71,7 +75,7 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
           </p>
         </div>
         
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <div className="text-lg font-semibold text-[#1f1e1d]">
             {new Intl.NumberFormat('en-US', { style: 'currency', currency: escrow.amount.currency }).format(escrow.amount.value)}
           </div>
@@ -111,7 +115,7 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
           
           {escrow.txHash && (
             <a
-              href={`https://etherscan.io/tx/${escrow.txHash}`}
+              href={`https://explorer.solana.com/tx/${escrow.txHash}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
