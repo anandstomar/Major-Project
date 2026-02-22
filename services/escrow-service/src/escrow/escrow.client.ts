@@ -149,7 +149,8 @@ export class EscrowClient {
       this.provider.connection,
       arbiterKeypair,
       mint,
-      beneficiary
+      beneficiary,
+      true
     );
 
     console.log("DEBUG: Executing release instruction...");
