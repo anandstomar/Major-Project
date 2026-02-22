@@ -75,7 +75,8 @@ export class EscrowClient {
       this.provider.connection,
       this.walletKeypair,
       mint,
-      initializer
+      initializer,
+      true
     );
 
     console.log("DEBUG: Created Token Account:", tokenAccount.address.toBase58());
