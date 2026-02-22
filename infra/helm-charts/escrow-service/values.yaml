@@ -1,14 +1,11 @@
 replicaCount: 1
-
 image:
   repository: ghcr.io/anandstomar/major-project/escrow-service
-  tag: "latest"
+  tag: "e5a0cafb368039beb98e0c9e0f431215002a53ce"
   pullPolicy: Always
-
 service:
   type: ClusterIP
   port: 8095
-
 resources:
   requests:
     cpu: 100m
@@ -16,7 +13,6 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
-
 env:
   SOLANA_RPC: "https://api.devnet.solana.com"
   ESCROW_PROGRAM_ID: "9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo"
