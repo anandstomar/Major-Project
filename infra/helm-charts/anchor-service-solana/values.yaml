@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/anchor-service-solana
-  tag: 983868a859cfcb4192e304f4db8e1027e697d49c
+  tag: 1dba27871f02fd377509a5812fe3fbcbe73a4b10
 imagePullSecrets:
   - name: ghcrpat
 replicaCount: 1
