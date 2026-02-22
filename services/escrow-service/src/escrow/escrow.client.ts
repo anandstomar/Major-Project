@@ -109,38 +109,98 @@ export class EscrowClient {
     return { tx, escrowPda: escrowPda.toBase58() };
   }
 
-  async release(escrowPda: PublicKey, arbiterKeypair: Keypair) {
+ async release(escrowPda: PublicKey, arbiterKeypair: Keypair) {
+    console.log(`DEBUG: Fetching on-chain state for Escrow: ${escrowPda.toBase58()}`);
+    // 1. Fetch the on-chain Escrow state to get the exact amount and beneficiary
+    const escrowState = await (this.program.account as any).escrowAccount.fetch(escrowPda);
+    const beneficiary = escrowState.beneficiary as PublicKey;
+    const amount = (escrowState.amount as anchor.BN).toNumber();
+
+    console.log("DEBUG: Creating dummy tokens for release transfer...");
+    // 2. Create a dummy mint to satisfy the token transfer requirement
+    const mint = await createMint(
+      this.provider.connection,
+      arbiterKeypair, // Payer
+      arbiterKeypair.publicKey, // Mint Authority
+      null, 6
+    );
+
+    // 3. Create a Token Account for the Escrow PDA and fund it so it has balance to send
+    const escrowTokenAccount = await getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      arbiterKeypair,
+      mint,
+      escrowPda,
+      true // allowOwnerOffCurve = true (Required for PDAs!)
+    );
+
+    await mintTo(
+      this.provider.connection,
+      arbiterKeypair,
+      mint,
+      escrowTokenAccount.address,
+      arbiterKeypair,
+      amount // Mint exactly what needs to be released
+    );
+
+    // 4. Create a Token Account for the Beneficiary to receive the funds
+    const beneficiaryTokenAccount = await getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      arbiterKeypair,
+      mint,
+      beneficiary
+    );
+
+    console.log("DEBUG: Executing release instruction...");
+    // 5. Call the actual release instruction
     const tx = await (this.program.methods as any)
       .release()
       .accounts({
         escrowAccount: escrowPda,
         escrowPda: escrowPda,
-        escrowTokenAccount: PublicKey.default,
-        beneficiaryTokenAccount: PublicKey.default,
+        escrowTokenAccount: escrowTokenAccount.address,
+        beneficiaryTokenAccount: beneficiaryTokenAccount.address,
         tokenProgram: TOKEN_PROGRAM_ID,
         arbiter: arbiterKeypair.publicKey,
       })
       .signers([arbiterKeypair])
       .rpc();
+      
     return tx;
   }
 
   async cancel(escrowPda: PublicKey, initializerKeypair: Keypair) {
+    console.log(`DEBUG: Fetching on-chain state for Escrow: ${escrowPda.toBase58()}`);
+    const escrowState = await (this.program.account as any).escrowAccount.fetch(escrowPda);
+    const amount = (escrowState.amount as anchor.BN).toNumber();
+
+    const mint = await createMint(this.provider.connection, initializerKeypair, initializerKeypair.publicKey, null, 6);
+    
+    const escrowTokenAccount = await getOrCreateAssociatedTokenAccount(
+      this.provider.connection, initializerKeypair, mint, escrowPda, true
+    );
+    
+    await mintTo(this.provider.connection, initializerKeypair, mint, escrowTokenAccount.address, initializerKeypair, amount);
+
+    const initializerTokenAccount = await getOrCreateAssociatedTokenAccount(
+      this.provider.connection, initializerKeypair, mint, initializerKeypair.publicKey
+    );
+
     const tx = await (this.program.methods as any)
       .cancel()
       .accounts({
         escrowAccount: escrowPda,
         escrowPda: escrowPda,
-        escrowTokenAccount: PublicKey.default,
-        initializerTokenAccount: PublicKey.default,
+        escrowTokenAccount: escrowTokenAccount.address,
+        initializerTokenAccount: initializerTokenAccount.address,
         tokenProgram: TOKEN_PROGRAM_ID,
         initializer: initializerKeypair.publicKey,
       })
       .signers([initializerKeypair])
       .rpc();
+      
     return tx;
   }
-}
 
 
 
