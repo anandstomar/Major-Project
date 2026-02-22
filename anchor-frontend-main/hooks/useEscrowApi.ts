@@ -1,30 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { EscrowSummary } from '../components/EscrowCard/types';
 import { fetchWithRetry } from '../utils/api';
-
-// Mock data for demonstration
-const MOCK_DATA: EscrowSummary[] = Array.from({ length: 20 }).map((_, i) => ({
-  requestId: `escrow-req-${String(i + 1).padStart(4, '0')}`,
-  status: ['pending', 'active', 'completed', 'cancelled', 'failed'][Math.floor(Math.random() * 5)] as any,
-  submitter: `user${i + 1}@example.com`,
-  counterparty: `counterparty${i + 1}@example.com`,
-  amount: { 
-    value: parseFloat((Math.random() * 10000).toFixed(2)), 
-    currency: 'USD', 
-    token: Math.random() > 0.5 ? 'USDC' : undefined 
-  },
-  merkleRoot: `0x${Math.random().toString(16).slice(2).repeat(4)}`,
-  txHash: `0x${Math.random().toString(16).slice(2).repeat(4)}`,
-  blockNumber: 123456 + i,
-  createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-  updatedAt: new Date().toISOString(),
-  events: [
-    { id: `e${i}-1`, type: 'created', message: 'Escrow created', ts: new Date(Date.now() - 10000000).toISOString() },
-    { id: `e${i}-2`, type: 'funded', message: 'Funds deposited', ts: new Date(Date.now() - 5000000).toISOString() },
-  ],
-  confirmations: Math.floor(Math.random() * 12),
-  attempts: 1,
-}));
 
 interface UseEscrowApiResult {
   data: EscrowSummary[];
@@ -35,7 +11,7 @@ interface UseEscrowApiResult {
   raiseDispute: (requestId: string) => Promise<void>;
   notifyParties: (requestId: string) => Promise<void>;
   getEscrowDetails: (requestId: string) => Promise<EscrowSummary | null>;
-   createEscrow: (data: { beneficiary: string; arbiter: string; amount: number }) => Promise<EscrowSummary>;
+  createEscrow: (data: { beneficiary: string; arbiter: string; amount: number }) => Promise<EscrowSummary>;
 }
 
 export function useEscrowApi(): UseEscrowApiResult {
@@ -47,26 +23,23 @@ export function useEscrowApi(): UseEscrowApiResult {
     setLoading(true);
     setError(null);
     try {
-      // SIMULATED NETWORK CALL
-      // Replace with: await axios.get('/api/v1/escrow', { params });
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate latency
-
-      let filtered = [...MOCK_DATA];
+      const res = await fetchWithRetry('/api/v1/escrow');
+      const fetchedData = await res.json();
       
-      if (params?.status && params.status !== 'All') {
-        filtered = filtered.filter(item => item.status === params.status.toLowerCase());
-      }
-      
-      if (params?.search) {
-        const q = params.search.toLowerCase();
-        filtered = filtered.filter(item => 
-          item.requestId.toLowerCase().includes(q) || 
-          item.submitter.toLowerCase().includes(q) ||
-          item.txHash?.toLowerCase().includes(q)
-        );
-      }
-
-      setData(filtered);
+      // Map Prisma schema to UI schema
+      let mappedData: EscrowSummary[] = fetchedData.map((item: any) => ({
+        requestId: item.escrowId, // Note the camelCase here!
+        status: item.status,
+        submitter: item.initializer,
+        counterparty: item.beneficiary,
+        amount: { value: Number(item.amount), currency: 'USD', token: 'USDC' },
+        txHash: item.txSig,       // Note the camelCase here!
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        confirmations: 1, 
+        attempts: 1,
+      }));
+      setData(mappedData);
     } catch (err) {
       setError('Failed to fetch escrow list');
       console.error(err);
@@ -76,50 +49,48 @@ export function useEscrowApi(): UseEscrowApiResult {
   }, []);
 
   const resolveEscrow = useCallback(async (requestId: string) => {
-    // Replace with: await axios.post(`/api/v1/escrow/${requestId}/resolve`);
+    // TODO: Connect to backend: await fetchWithRetry(`/api/v1/escrow/${requestId}/resolve`, { method: 'POST' });
     await new Promise(resolve => setTimeout(resolve, 1000));
     console.log(`Resolved ${requestId}`);
     
-    // Optimistic update
+    // Optimistic UI update
     setData(prev => prev.map(item => 
       item.requestId === requestId ? { ...item, status: 'completed' } : item
     ));
   }, []);
 
   const raiseDispute = useCallback(async (requestId: string) => {
-    // Replace with: await axios.post(`/api/v1/escrow/${requestId}/dispute`);
+    // TODO: Connect to backend: await fetchWithRetry(`/api/v1/escrow/${requestId}/dispute`, { method: 'POST' });
     await new Promise(resolve => setTimeout(resolve, 1000));
     console.log(`Dispute raised for ${requestId}`);
     
-    // Optimistic update
+    // Optimistic UI update
     setData(prev => prev.map(item => 
-      item.requestId === requestId ? { ...item, status: 'active' } : item // Assuming dispute keeps it active or specific status
+      item.requestId === requestId ? { ...item, status: 'active' } : item
     ));
   }, []);
 
   const notifyParties = useCallback(async (requestId: string) => {
-    // Replace with: await axios.post(`/api/v1/escrow/${requestId}/notify`);
+    // TODO: Connect to backend: await fetchWithRetry(`/api/v1/escrow/${requestId}/notify`, { method: 'POST' });
     await new Promise(resolve => setTimeout(resolve, 500));
     console.log(`Notified parties for ${requestId}`);
   }, []);
 
   const getEscrowDetails = useCallback(async (requestId: string) => {
-    // Replace with: const res = await axios.get(`/api/v1/escrow/${requestId}`); return res.data;
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return MOCK_DATA.find(item => item.requestId === requestId) || null;
-  }, []);
+    // Since we don't have a GET endpoint yet, just find it in the current session data
+    return data.find(item => item.requestId === requestId) || null;
+  }, [data]);
 
- 
-  const createEscrow = useCallback(async (data: { beneficiary: string; arbiter: string; amount: number }) => {
-    // 1. Send the real request to the NestJS backend
+  const createEscrow = useCallback(async (payload: { beneficiary: string; arbiter: string; amount: number }) => {
     const token = localStorage.getItem("access_token");
+    
     const res = await fetchWithRetry('/api/v1/escrow/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
 
     if (!res.ok) {
@@ -128,16 +99,16 @@ export function useEscrowApi(): UseEscrowApiResult {
 
     const backendResult = await res.json();
     
-    // 2. Map the backend response to your UI's EscrowSummary shape
+    // Map the backend response to the UI's EscrowSummary shape
     const newEscrow: EscrowSummary = {
       requestId: backendResult.escrow_id || backendResult.escrowPda,
       status: 'active',
       submitter: 'Current User', 
-      counterparty: data.beneficiary, // Display the Solana pubkey as the counterparty
+      counterparty: payload.beneficiary, 
       amount: {
-        value: data.amount,
+        value: payload.amount,
         currency: 'USD',
-        token: 'USDC' // Defaulting to USDC for the UI
+        token: 'USDC' 
       },
       txHash: backendResult.tx_sig || backendResult.tx,
       createdAt: new Date().toISOString(),
@@ -152,7 +123,7 @@ export function useEscrowApi(): UseEscrowApiResult {
       attempts: 1,
     };
 
-    // 3. Optimistically add to the UI list
+    // Optimistically add to the top of the UI list
     setData(prev => [newEscrow, ...prev]);
     return newEscrow;
   }, []);

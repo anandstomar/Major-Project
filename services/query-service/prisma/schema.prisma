@@ -42,3 +42,17 @@ model IngestJob {
 
   @@map("ingest_jobs")
 }
+
+model Escrow {
+  escrowId    String   @id @map("escrow_id")
+  initializer String
+  beneficiary String
+  arbiter     String
+  amount      Float
+  status      String   @default("active")
+  txSig       String   @map("tx_sig")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("escrows")
+}
