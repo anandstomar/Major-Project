@@ -201,8 +201,7 @@ export class EscrowClient {
       
     return tx;
   }
-
-
+}
 
 
 // //import * as anchor from "@project-serum/anchor";
