@@ -19,29 +19,56 @@ export function useEscrowApi(): UseEscrowApiResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchList = useCallback(async (params?: { status?: string; search?: string; page?: number }) => {
+const fetchList = useCallback(async (params?: { status?: string; search?: string; page?: number }) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetchWithRetry('/api/v1/escrow');
-      const fetchedData = await res.json();
+      let fetchedData = await res.json();
+
+      // 👇 DEBUG: See exactly what the backend returned
+      console.log("Raw API Response:", fetchedData);
+
+      // 👇 SAFEGUARD: Handle if response is wrapped in { data: [...] }
+      if (fetchedData && !Array.isArray(fetchedData) && Array.isArray(fetchedData.data)) {
+        fetchedData = fetchedData.data;
+      }
+
+      // 👇 SAFEGUARD: If it's STILL not an array, throw a clear error
+      if (!Array.isArray(fetchedData)) {
+         console.error("Backend did not return an array. It returned:", fetchedData);
+         // Don't crash the UI, just set an empty list
+         setData([]);
+         setError(fetchedData.message || 'API returned invalid data format.');
+         return;
+      }
       
       // Map Prisma schema to UI schema
       let mappedData: EscrowSummary[] = fetchedData.map((item: any) => ({
-        requestId: item.escrowId, // Note the camelCase here!
+        requestId: item.escrowId || item.escrow_id, // Safely check both camelCase and snake_case
         status: item.status,
         submitter: item.initializer,
         counterparty: item.beneficiary,
         amount: { value: Number(item.amount), currency: 'USD', token: 'USDC' },
-        txHash: item.txSig,       // Note the camelCase here!
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
+        txHash: item.txSig || item.tx_sig,
+        createdAt: item.createdAt || item.created_at,
+        updatedAt: item.updatedAt || item.updated_at,
         confirmations: 1, 
         attempts: 1,
       }));
+
+      // Apply local filters if needed
+      if (params?.status && params.status !== 'All') {
+        mappedData = mappedData.filter(item => item.status === params.status.toLowerCase());
+      }
+      if (params?.search) {
+        const q = params.search.toLowerCase();
+        mappedData = mappedData.filter(item => item.requestId.toLowerCase().includes(q));
+      }
+
       setData(mappedData);
-    } catch (err) {
-      setError('Failed to fetch escrow list');
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch escrow list');
       console.error(err);
     } finally {
       setLoading(false);
