@@ -3,6 +3,8 @@ FROM node:22-alpine
 
 WORKDIR /usr/src/app
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
 
 # Install ALL dependencies (including devDependencies like @nestjs/cli)
