@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: ghcr.io/anandstomar/major-project/escrow-service
-  tag: "e5a0cafb368039beb98e0c9e0f431215002a53ce"
+  tag: "48f7c2de120bd272072393bb14f2bd6fc4e82e95"
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -24,8 +24,6 @@ env:
   ESCROW_SECRET_NAME: "escrow-json"
   ESCROW_SECRET_KEY: "escrow.json"
   DATABASE_URL: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
-  
-
 nodeSelector: {}
 tolerations: []
 affinity: {}
