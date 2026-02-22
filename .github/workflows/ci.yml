@@ -52,6 +52,9 @@ jobs:
           - service: auth
             folder: auth
             dockerfile: Dockerfile
+          - service: escrow-service
+            folder: escrow-service  
+            dockerfile: Dockerfile
 
     steps:
       - name: Checkout
