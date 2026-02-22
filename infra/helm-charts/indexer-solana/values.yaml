@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/indexer-solana
-  tag: 84abfb249bc0a31519b040641d9cfde4c282c9ce
+  tag: e0a721f71580ffe49d1f49c6a890cd72f143d6c5
 replicaCount: 1
 service:
   type: ClusterIP
