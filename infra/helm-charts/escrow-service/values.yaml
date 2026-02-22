@@ -21,7 +21,7 @@ env:
   SOLANA_RPC: "https://api.devnet.solana.com"
   ESCROW_PROGRAM_ID: "9ttJXA6WENpW6ipHvnvYeix9mbbMnDYQcH42DWxx5nRo"
   # ESCROW_IDL_PATH: "/app/programs/escrow-program/target/idl/escrow.json"
-  KAFKA_BOOTSTRAP: "kafka-external.default.svc.cluster.local:9094"
+  KAFKA_BOOTSTRAP: "kafka-external:9092"
   KAFKA_ESCROW_TOPIC: "escrow.events"
   WALLET_SECRET_NAME: "escrow-fee-payer"
   WALLET_SECRET_KEY: "escrow-fee-payer.json"
