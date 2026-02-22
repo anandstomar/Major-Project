@@ -27,6 +27,7 @@ env:
   WALLET_SECRET_KEY: "escrow-fee-payer.json"
   ESCROW_SECRET_NAME: "escrow-json"
   ESCROW_SECRET_KEY: "escrow.json"
+  DATABASE_URL: "postgresql://indexer:indexerpwd@postgresql.default.svc.cluster.local:5432/indexer?schema=public"
   
 
 nodeSelector: {}
