@@ -29,7 +29,7 @@ export class EscrowService implements OnModuleInit {
     await this.kafkaConsumer.subscribe({ topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events', fromBeginning: true });
     
     await this.kafkaConsumer.run({
-      eachMessage: async ({ message }) => {
+      eachMessage: async ({ message }: { message: any }) => {
         if (!message.value) return;
         const event = JSON.parse(message.value.toString());
         this.logger.log(`Received Kafka Event: ${event.event_type} for ${event.escrow_id}`);
