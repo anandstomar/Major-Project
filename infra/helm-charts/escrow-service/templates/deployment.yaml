@@ -37,9 +37,11 @@ spec:
             - name: WALLET_KEYPATH
               value: "/etc/credentials/{{ .Values.env.WALLET_SECRET_KEY }}"
           volumeMounts:
-            - name: wallet-secret
+            - name: escrow-json-config
               mountPath: /etc/credentials
               readOnly: true
+            - name: escrow-fee-payer
+              mountPath: /keys
           resources:
             requests:
               cpu: "{{ .Values.resources.requests.cpu }}"
@@ -48,9 +50,13 @@ spec:
               cpu: "{{ .Values.resources.limits.cpu }}"
               memory: "{{ .Values.resources.limits.memory }}"
       volumes:
-        - name: wallet-secret
+        - name: escrow-json-config
+          secret:
+            secretName: {{ .Values.env.ESCROW_SECRET_NAME }}
+            items:
+              - key: {{ .Values.env.ESCROW_SECRET_KEY }}
+        - name: escrow-fee-payer
           secret:
             secretName: {{ .Values.env.WALLET_SECRET_NAME }}
             items:
               - key: {{ .Values.env.WALLET_SECRET_KEY }}
-                path: {{ .Values.env.WALLET_SECRET_KEY }}

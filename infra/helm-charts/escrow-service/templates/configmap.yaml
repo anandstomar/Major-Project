@@ -1,6 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "escrow-service.fullname" . }}-config
+  name: {{ .Values.env.ESCROW_SECRET_NAME }}
 data:
-  ESCROW_SERVICE_LOG_LEVEL: "info"
+  {{ .Values.env.ESCROW_SECRET_KEY }}: |- 
+{{ .Files.Get "files/escrow.json" | indent 4 }}

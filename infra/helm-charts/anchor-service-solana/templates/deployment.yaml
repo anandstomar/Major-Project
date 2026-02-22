@@ -35,12 +35,12 @@ spec:
             - name: DATABASE_URL
               value: "{{ .Values.env.DATABASE_URL }}"
           volumeMounts:
-            - name: idl
+            - name: json-config
               mountPath: /var/idl
             - name: fee-payer
               mountPath: /keys
       volumes:
-        - name: idl
+        - name: json-config
           configMap:
             name: {{ .Values.env.SOLANA_IDL_CONFIGMAP }}
         - name: fee-payer

@@ -3,10 +3,12 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Anchors } from './components/Anchors';
+import { LandingPage } from './components/landingPage';
 import { 
   Ingest, Validator, Scheduler, SearchPage, Analytics, 
   Notifications, Settings 
 } from './components/MockViews';
+import { EscrowList } from './components/EscrowCard';
 import { ChatAssistant } from './components/ChatAssistant';
 import { Login, Signup } from './components/Auth';
 
@@ -62,6 +64,10 @@ export default function App() {
           path="/signup" 
           element={isAuthenticated ? <Navigate to="/" replace /> : <Signup onLogin={handleLogin} />} 
         />
+        <Route 
+          path="/landing" 
+          element={<LandingPage />} 
+        />
         
         {/* 👇 FIX: Wrap ALL dashboard routes INSIDE the authenticated Layout route */}
         <Route 
@@ -81,6 +87,7 @@ export default function App() {
           <Route path="anchors" element={<Anchors />} />
           <Route path="ingest" element={<Ingest />} />
           <Route path="validator" element={<Validator />} />
+          <Route path="escrow" element={<EscrowList />} />
           <Route path="scheduler" element={<Scheduler />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="analytics" element={<Analytics />} />

@@ -23,8 +23,11 @@ env:
   # ESCROW_IDL_PATH: "/app/programs/escrow-program/target/idl/escrow.json"
   KAFKA_BOOTSTRAP: "kafka-external.default.svc.cluster.local:9094"
   KAFKA_ESCROW_TOPIC: "escrow.events"
-  WALLET_SECRET_NAME: "solana-wallet-secret"
-  WALLET_SECRET_KEY: "wallet.json"
+  WALLET_SECRET_NAME: "escrow-fee-payer"
+  WALLET_SECRET_KEY: "escrow-fee-payer.json"
+  ESCROW_SECRET_NAME: "escrow-json"
+  ESCROW_SECRET_KEY: "escrow.json"
+  
 
 nodeSelector: {}
 tolerations: []

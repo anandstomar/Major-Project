@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Anchor, UploadCloud, CheckSquare, Calendar, 
-  BarChart2, Bell, Settings, Menu, Search as SearchIcon, User, LogOut
+  BarChart2, Bell, Settings, Menu, Search as SearchIcon, User, LogOut, ShieldCheck
 } from 'lucide-react';
 import { NavItem } from '../types';
 import { SmartSearch } from './SmartSearch';
@@ -12,6 +12,7 @@ import { Logo } from './ui/Assets';
 const NAV_ITEMS: NavItem[] = [
   { id: '1', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { id: '2', label: 'Anchors', icon: Anchor, path: '/anchors' },
+  { id: 'escrow', label: 'Escrow', icon: ShieldCheck, path: '/escrow' },
   { id: '3', label: 'Ingest', icon: UploadCloud, path: '/ingest' },
   { id: '4', label: 'Validator', icon: CheckSquare, path: '/validator' },
   { id: '5', label: 'Scheduler', icon: Calendar, path: '/scheduler' },
