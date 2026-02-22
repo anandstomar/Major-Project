@@ -33,15 +33,15 @@ export class EscrowClient {
     this.program = new anchor.Program(idl, this.provider);
   }
 
-  async initializeEscrow(beneficiary: PublicKey, arbiter: PublicKey, amount: number) {
+ async initializeEscrow(beneficiary: PublicKey, arbiter: PublicKey, amount: number) {
     const initializer = this.provider.wallet.publicKey;
-    const [escrowPda] = PublicKey.findProgramAddressSync(
+    
+    // 👇 1. Capture the REAL bump from Solana
+    const [escrowPda, bump] = PublicKey.findProgramAddressSync(
       [Buffer.from("escrow"), initializer.toBuffer(), beneficiary.toBuffer()],
       this.program.programId
     );
 
-   console.log("DEBUG: Creating dummy Mint and Token Account for testing...");
-  
     console.log("DEBUG: Checking SOL balance for fees...");
     const balance = await this.provider.connection.getBalance(this.walletKeypair.publicKey);
     
@@ -49,7 +49,7 @@ export class EscrowClient {
       console.log("DEBUG: Low balance detected. Requesting Airdrop from faucet...");
       const airdropSig = await this.provider.connection.requestAirdrop(
         this.walletKeypair.publicKey,
-        2 * anchor.web3.LAMPORTS_PER_SOL // Request 2 SOL
+        2 * anchor.web3.LAMPORTS_PER_SOL 
       );
       
       const latestBlockHash = await this.provider.connection.getLatestBlockhash();
@@ -60,47 +60,44 @@ export class EscrowClient {
       });
       console.log("DEBUG: Airdrop successful!");
     }
+
+    console.log("DEBUG: Creating dummy Mint and Token Account for testing...");
     
-    // 1. Create a dummy Mint
     const mint = await createMint(
       this.provider.connection,
-      this.walletKeypair, // Payer
-      initializer,        // Mint Authority
-      null,               // Freeze Authority
-      6                   // Decimals
+      this.walletKeypair, 
+      initializer,        
+      null,               
+      6                   
     );
 
-    // 2. Create a Token Account for the initializer
     const tokenAccount = await getOrCreateAssociatedTokenAccount(
       this.provider.connection,
       this.walletKeypair,
       mint,
       initializer,
-      true
+      true // allowOwnerOffCurve
     );
 
-    console.log("DEBUG: Created Token Account:", tokenAccount.address.toBase58());
-
-    // 3. Mint some tokens to it (so the user actually has balance)
     await mintTo(
       this.provider.connection,
       this.walletKeypair,
       mint,
       tokenAccount.address,
       this.walletKeypair,
-      1000 // Mint 1000 tokens
+      amount 
     );
 
-    // 4. Call the program with the REAL token account
     const tx = await (this.program.methods as any)
-      .initializeEscrow(new anchor.BN(123), new anchor.BN(amount))
+      // 👇 2. Pass the real bump instead of 123!
+      .initializeEscrow(bump, new anchor.BN(amount))
       .accounts({
         escrowAccount: escrowPda,
         initializer: initializer,
         beneficiary: beneficiary,
         arbiter: arbiter,
-        initializerTokenAccount: tokenAccount.address, // <--- NOW A VALID TOKEN ACCOUNT
-        mint: mint,                                    // <--- NOW A VALID MINT
+        initializerTokenAccount: tokenAccount.address, 
+        mint: mint,                                    
         systemProgram: SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -109,7 +106,7 @@ export class EscrowClient {
 
     return { tx, escrowPda: escrowPda.toBase58() };
   }
-
+  
  async release(escrowPda: PublicKey, arbiterKeypair: Keypair) {
     console.log(`DEBUG: Fetching on-chain state for Escrow: ${escrowPda.toBase58()}`);
     // 1. Fetch the on-chain Escrow state to get the exact amount and beneficiary
