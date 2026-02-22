@@ -64,6 +64,13 @@ spec:
                 name: notification-service
                 port:
                   number: 3000
+          - path: /api/v1/escrow
+            pathType: Prefix
+            backend:
+              service:
+                name: escrow-service
+                port:
+                  number: 8095
           - path: /
             pathType: Prefix
             backend:

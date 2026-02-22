@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { EscrowSummary } from '../components/EscrowCard/types';
+import { fetchWithRetry } from '../utils/api';
 
 // Mock data for demonstration
 const MOCK_DATA: EscrowSummary[] = Array.from({ length: 20 }).map((_, i) => ({
@@ -34,6 +35,7 @@ interface UseEscrowApiResult {
   raiseDispute: (requestId: string) => Promise<void>;
   notifyParties: (requestId: string) => Promise<void>;
   getEscrowDetails: (requestId: string) => Promise<EscrowSummary | null>;
+   createEscrow: (data: { beneficiary: string; arbiter: string; amount: number }) => Promise<EscrowSummary>;
 }
 
 export function useEscrowApi(): UseEscrowApiResult {
@@ -107,24 +109,50 @@ export function useEscrowApi(): UseEscrowApiResult {
     return MOCK_DATA.find(item => item.requestId === requestId) || null;
   }, []);
 
-  const createEscrow = useCallback(async (data: Partial<EscrowSummary>) => {
-    // Replace with: await axios.post('/api/v1/escrow', data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+ 
+  const createEscrow = useCallback(async (data: { beneficiary: string; arbiter: string; amount: number }) => {
+    // 1. Send the real request to the NestJS backend
+    const token = localStorage.getItem("access_token");
+    const res = await fetchWithRetry('/api/v1/escrow/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to create escrow: ${await res.text()}`);
+    }
+
+    const backendResult = await res.json();
     
+    // 2. Map the backend response to your UI's EscrowSummary shape
     const newEscrow: EscrowSummary = {
-      requestId: `escrow-req-${Math.floor(Math.random() * 10000)}`,
-      status: 'pending',
-      submitter: 'current-user@example.com',
-      counterparty: data.counterparty,
-      amount: data.amount!,
+      requestId: backendResult.escrow_id || backendResult.escrowPda,
+      status: 'active',
+      submitter: 'Current User', 
+      counterparty: data.beneficiary, // Display the Solana pubkey as the counterparty
+      amount: {
+        value: data.amount,
+        currency: 'USD',
+        token: 'USDC' // Defaulting to USDC for the UI
+      },
+      txHash: backendResult.tx_sig || backendResult.tx,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      events: [{ id: `e-${Date.now()}`, type: 'created', message: 'Escrow created', ts: new Date().toISOString() }],
+      events: [{ 
+        id: `e-${Date.now()}`, 
+        type: 'created', 
+        message: 'Escrow deployed to Solana Mainnet', 
+        ts: new Date().toISOString() 
+      }],
       confirmations: 0,
-      attempts: 0,
-      ...data
-    } as EscrowSummary;
+      attempts: 1,
+    };
 
+    // 3. Optimistically add to the UI list
     setData(prev => [newEscrow, ...prev]);
     return newEscrow;
   }, []);

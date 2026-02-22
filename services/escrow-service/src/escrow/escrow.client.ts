@@ -40,7 +40,26 @@ export class EscrowClient {
       this.program.programId
     );
 
-    console.log("DEBUG: Creating dummy Mint and Token Account for testing...");
+   console.log("DEBUG: Creating dummy Mint and Token Account for testing...");
+  
+    console.log("DEBUG: Checking SOL balance for fees...");
+    const balance = await this.provider.connection.getBalance(this.walletKeypair.publicKey);
+    
+    if (balance < 0.5 * anchor.web3.LAMPORTS_PER_SOL) {
+      console.log("DEBUG: Low balance detected. Requesting Airdrop from faucet...");
+      const airdropSig = await this.provider.connection.requestAirdrop(
+        this.walletKeypair.publicKey,
+        2 * anchor.web3.LAMPORTS_PER_SOL // Request 2 SOL
+      );
+      
+      const latestBlockHash = await this.provider.connection.getLatestBlockhash();
+      await this.provider.connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: airdropSig,
+      });
+      console.log("DEBUG: Airdrop successful!");
+    }
     
     // 1. Create a dummy Mint
     const mint = await createMint(

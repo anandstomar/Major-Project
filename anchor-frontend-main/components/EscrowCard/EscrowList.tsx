@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Calendar, RefreshCw, Plus, AlertTriangle, Bell, CheckCircle } from 'lucide-react';
 import { EscrowCard } from './EscrowCard';
 import { EscrowDetailPanel } from './EscrowDetailPanel';
-import { useEscrowApi } from '../../hooks/useEscrowApi';
+import {useEscrowApi}  from '../../hooks/useEscrowApi';
 import { EscrowSummary } from './types';
 import { Modal } from '../ui/Modal';
 
@@ -32,11 +32,20 @@ export const EscrowList: React.FC = () => {
   const [disputeReason, setDisputeReason] = useState('');
   
   // Create Form State
+  // const [createForm, setCreateForm] = useState({
+  //   amount: '',
+  //   currency: 'USD',
+  //   token: '',
+  //   counterparty: ''
+  // });
+
+  // Create Form State
   const [createForm, setCreateForm] = useState({
     amount: '',
     currency: 'USD',
     token: '',
-    counterparty: ''
+    beneficiary: '', 
+    arbiter: ''      
   });
 
   // Initial fetch
@@ -70,7 +79,7 @@ export const EscrowList: React.FC = () => {
     setActiveModal(type);
     setDisputeReason('');
     if (type === 'create') {
-      setCreateForm({ amount: '', currency: 'USD', token: '', counterparty: '' });
+      setCreateForm({ amount: '', currency: 'USD', token: '', beneficiary: '', arbiter: '' });
     }
   };
 
@@ -90,13 +99,11 @@ export const EscrowList: React.FC = () => {
       } else if (activeModal === 'notify' && actionTargetId) {
         await notifyParties(actionTargetId);
       } else if (activeModal === 'create') {
+        // Send the real Solana parameters to the hook
         await createEscrow({
-          amount: {
-            value: parseFloat(createForm.amount),
-            currency: createForm.currency,
-            token: createForm.token || undefined
-          },
-          counterparty: createForm.counterparty
+          amount: parseFloat(createForm.amount),
+          beneficiary: createForm.beneficiary,
+          arbiter: createForm.arbiter
         });
       }
       closeActionModal();
@@ -327,7 +334,7 @@ export const EscrowList: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal
+     <Modal
         isOpen={activeModal === 'create'}
         onClose={closeActionModal}
         title="Create New Escrow"
@@ -336,7 +343,7 @@ export const EscrowList: React.FC = () => {
             <button onClick={closeActionModal} className="px-4 py-2 text-sm font-medium text-[#5d5c58] hover:text-[#1f1e1d]">Cancel</button>
             <button 
               onClick={handleConfirmAction}
-              disabled={isProcessing || !createForm.amount || !createForm.counterparty}
+              disabled={isProcessing || !createForm.amount || !createForm.beneficiary || !createForm.arbiter}
               className="px-4 py-2 bg-[#BE3F2F] text-white text-sm font-medium rounded-md hover:bg-[#a33629] disabled:opacity-50 flex items-center gap-2"
             >
               {isProcessing && <RefreshCw className="w-3 h-3 animate-spin" />}
@@ -345,15 +352,26 @@ export const EscrowList: React.FC = () => {
           </>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-4">     
           <div>
-            <label className="block text-sm font-medium text-[#1f1e1d] mb-1">Counterparty Email</label>
+            <label className="block text-sm font-medium text-[#1f1e1d] mb-1">Beneficiary Public Key</label>
             <input 
-              type="email"
-              className="w-full p-2 border border-[#e0e0dc] rounded-md text-sm focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] outline-none"
-              placeholder="recipient@example.com"
-              value={createForm.counterparty}
-              onChange={(e) => setCreateForm({...createForm, counterparty: e.target.value})}
+              type="text"
+              className="w-full p-2 border border-[#e0e0dc] rounded-md text-sm font-mono focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] outline-none"
+              placeholder="e.g., 5KPx... (Solana Address)"
+              value={createForm.beneficiary}
+              onChange={(e) => setCreateForm({...createForm, beneficiary: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1f1e1d] mb-1">Arbiter Public Key</label>
+            <input 
+              type="text"
+              className="w-full p-2 border border-[#e0e0dc] rounded-md text-sm font-mono focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] outline-none"
+              placeholder="e.g., 7AbC... (Solana Address)"
+              value={createForm.arbiter}
+              onChange={(e) => setCreateForm({...createForm, arbiter: e.target.value})}
             />
           </div>
           
