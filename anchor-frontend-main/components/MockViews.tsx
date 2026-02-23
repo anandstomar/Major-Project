@@ -1557,7 +1557,7 @@ export const Analytics = () => {
             if (!token) return;
 
             // This hits Ingress -> analytics-api-service -> PySpark Flask Thread
-            const response = await fetchWithRetry("/analytics/hourly", {
+            const response = await fetchWithRetry("/api/v1/analytics/hourly", {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             

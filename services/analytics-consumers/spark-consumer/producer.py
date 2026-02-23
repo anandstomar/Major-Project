@@ -2,7 +2,7 @@
 from kafka import KafkaProducer
 import json, time, datetime
 
-BOOTSTRAP = "127.0.0.1:29092"
+BOOTSTRAP = "127.0.0.1:9092"
 TOPIC = "anchors.completed"
 
 producer = KafkaProducer(
