@@ -1547,8 +1547,42 @@ export const Scheduler = () => {
 
 export const Analytics = () => {
     const [toast, setToast] = useState<string | null>(null);
+    const [hourlyData, setHourlyData] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // 1. Fetch real PySpark aggregates from your backend API
+   const fetchAnalytics = async () => {
+        try {
+            const token = localStorage.getItem("access_token");
+            if (!token) return;
+
+            // This hits Ingress -> analytics-api-service -> PySpark Flask Thread
+            const response = await fetchWithRetry("/analytics/hourly", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setHourlyData(data.items || data);
+            }
+        } catch (err) {
+            console.error("Failed to load analytics", err);
+            setToast("Failed to sync with Analytics engine");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 2. Poll the analytics engine every 10 seconds for real-time updates
+    useEffect(() => {
+        fetchAnalytics();
+        const interval = setInterval(fetchAnalytics, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div>
+            {/* Top KPI Cards (You can also wire these to real API data later) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                  <Card className="p-6">
                      <h4 className="text-[#5d5c58] font-medium text-xs uppercase tracking-wider mb-2">Total Anchors (Monthly)</h4>
@@ -1567,32 +1601,49 @@ export const Analytics = () => {
                  </Card>
             </div>
 
-            <SectionHeader title="Hourly Aggregates" action={<button onClick={() => setToast("Downloading CSV report...")} className="text-[#BE3F2F] text-sm font-medium hover:underline">Download CSV</button>} />
-            <Card className="overflow-hidden">
+            <SectionHeader 
+                title="Hourly Aggregates (Live PySpark Data)" 
+                action={<button onClick={() => setToast("Downloading CSV report...")} className="text-[#BE3F2F] text-sm font-medium hover:underline">Download CSV</button>} 
+            />
+            
+            <Card className="overflow-hidden min-h-[200px] relative">
+                {isLoading && hourlyData.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                        <span className="text-sm text-gray-500 animate-pulse">Querying Spark Analytics Engine...</span>
+                    </div>
+                )}
                 <table className="w-full text-left text-sm">
                     <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Hour</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Total Requests</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Batches</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Avg Latency</th>
-                            <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Success Rate</th>
+                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Time Window</th>
+                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Status</th>
+                            <th className="px-6 py-4 font-semibold text-[#5d5c58]">Total Processed</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#f1f0ee]">
-                        {[
-                            { hr: '14:00', req: 12400, bat: 12, lat: '45ms', rate: '100%' },
-                            { hr: '13:00', req: 11200, bat: 10, lat: '48ms', rate: '99.9%' },
-                            { hr: '12:00', req: 14500, bat: 15, lat: '52ms', rate: '99.5%' },
-                            { hr: '11:00', req: 9800, bat: 9, lat: '41ms', rate: '100%' },
-                            { hr: '10:00', req: 10100, bat: 11, lat: '44ms', rate: '100%' },
-                        ].map((row, i) => (
+                        {hourlyData.length === 0 && !isLoading && (
+                            <tr>
+                                <td colSpan={3} className="text-center py-12 text-gray-400">
+                                    No analytics data available yet. Waiting for Spark micro-batches...
+                                </td>
+                            </tr>
+                        )}
+                        {hourlyData.map((row, i) => (
                             <tr key={i} className="hover:bg-[#fcfbf9]">
-                                <td className="px-6 py-4 font-medium text-[#1f1e1d]">{row.hr}</td>
-                                <td className="px-6 py-4 text-[#5d5c58]">{row.req.toLocaleString()}</td>
-                                <td className="px-6 py-4 text-[#5d5c58]">{row.bat}</td>
-                                <td className="px-6 py-4 text-[#5d5c58]">{row.lat}</td>
-                                <td className="px-6 py-4 text-right text-emerald-600 font-medium">{row.rate}</td>
+                                <td className="px-6 py-4 font-medium text-[#1f1e1d]">
+                                    {/* Formats the PySpark ISO string into a readable time */}
+                                    {new Date(row.window_start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(row.window_end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </td>
+                                <td className="px-6 py-4">
+                                    <Badge 
+                                        status={row.status === 'success' || row.status === 'OK' ? Status.OK : Status.FAILED} 
+                                        label={row.status.toUpperCase()} 
+                                        size="sm" 
+                                    />
+                                </td>
+                                <td className="px-6 py-4 font-mono text-[#5d5c58] text-lg">
+                                    {row.count.toLocaleString()}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -1602,6 +1653,64 @@ export const Analytics = () => {
         </div>
     );
 };
+
+// export const Analytics = () => {
+//     const [toast, setToast] = useState<string | null>(null);
+//     return (
+//         <div>
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+//                  <Card className="p-6">
+//                      <h4 className="text-[#5d5c58] font-medium text-xs uppercase tracking-wider mb-2">Total Anchors (Monthly)</h4>
+//                      <div className="text-3xl font-light text-[#1f1e1d]">482,900</div>
+//                      <div className="text-emerald-600 text-xs mt-3 font-medium flex items-center gap-1"><ArrowRight size={10} className="-rotate-45" /> +14.2% growth</div>
+//                  </Card>
+//                  <Card className="p-6">
+//                      <h4 className="text-[#5d5c58] font-medium text-xs uppercase tracking-wider mb-2">Cost Efficiency</h4>
+//                      <div className="text-3xl font-light text-[#1f1e1d]">$0.004</div>
+//                      <div className="text-[#8c8b88] text-xs mt-3">Avg cost per anchor</div>
+//                  </Card>
+//                  <Card className="p-6">
+//                      <h4 className="text-[#5d5c58] font-medium text-xs uppercase tracking-wider mb-2">Data Ingested</h4>
+//                      <div className="text-3xl font-light text-[#1f1e1d]">1.4 TB</div>
+//                      <div className="text-[#8c8b88] text-xs mt-3">Parquet store size</div>
+//                  </Card>
+//             </div>
+
+//             <SectionHeader title="Hourly Aggregates" action={<button onClick={() => setToast("Downloading CSV report...")} className="text-[#BE3F2F] text-sm font-medium hover:underline">Download CSV</button>} />
+//             <Card className="overflow-hidden">
+//                 <table className="w-full text-left text-sm">
+//                     <thead className="bg-[#fbfbfa] border-b border-[#e0e0dc]">
+//                         <tr>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Hour</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Total Requests</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Batches</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58]">Avg Latency</th>
+//                             <th className="px-6 py-4 font-semibold text-[#5d5c58] text-right">Success Rate</th>
+//                         </tr>
+//                     </thead>
+//                     <tbody className="divide-y divide-[#f1f0ee]">
+//                         {[
+//                             { hr: '14:00', req: 12400, bat: 12, lat: '45ms', rate: '100%' },
+//                             { hr: '13:00', req: 11200, bat: 10, lat: '48ms', rate: '99.9%' },
+//                             { hr: '12:00', req: 14500, bat: 15, lat: '52ms', rate: '99.5%' },
+//                             { hr: '11:00', req: 9800, bat: 9, lat: '41ms', rate: '100%' },
+//                             { hr: '10:00', req: 10100, bat: 11, lat: '44ms', rate: '100%' },
+//                         ].map((row, i) => (
+//                             <tr key={i} className="hover:bg-[#fcfbf9]">
+//                                 <td className="px-6 py-4 font-medium text-[#1f1e1d]">{row.hr}</td>
+//                                 <td className="px-6 py-4 text-[#5d5c58]">{row.req.toLocaleString()}</td>
+//                                 <td className="px-6 py-4 text-[#5d5c58]">{row.bat}</td>
+//                                 <td className="px-6 py-4 text-[#5d5c58]">{row.lat}</td>
+//                                 <td className="px-6 py-4 text-right text-emerald-600 font-medium">{row.rate}</td>
+//                             </tr>
+//                         ))}
+//                     </tbody>
+//                 </table>
+//             </Card>
+//             <Toast message={toast} onClose={() => setToast(null)} />
+//         </div>
+//     );
+// };
 
 
 export const Notifications = () => {

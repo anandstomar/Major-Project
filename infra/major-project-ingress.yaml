@@ -71,6 +71,13 @@ spec:
                 name: escrow-service
                 port:
                   number: 8095
+          - path: /api/v1/analytics
+            pathType: Prefix
+            backend:
+              service:
+                name: analytics-api-service
+                port:
+                  number: 5001
           - path: /
             pathType: Prefix
             backend:
