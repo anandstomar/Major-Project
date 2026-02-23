@@ -19,6 +19,10 @@ jobs:
       fail-fast: false
       matrix: 
           include:
+          - service: analytics-consumer
+            folder: analytics-consumers/spark-consumer
+            dockerfile: Dockerfile
+          - service: anchor-service-solana
           - service: anchor-service
             folder: anchor-service
             dockerfile: Dockerfile.go
