@@ -12,6 +12,6 @@
     "emitDecoratorMetadata": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../anchor-frontend-main/components/EscrowCard/WalletContextProvider.tsx"],
   "exclude": ["node_modules", "dist"]
 }

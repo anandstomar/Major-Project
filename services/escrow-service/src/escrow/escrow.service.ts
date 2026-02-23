@@ -109,6 +109,22 @@ export class EscrowService implements OnModuleInit {
     this.logger.log(`Notification sent for ${escrowPdaStr}`);
     return { ok: true };
   }
+
+  async syncEscrowStatus(escrowPdaStr: string, status: string, txSig: string) {
+    const event = { 
+      escrow_id: escrowPdaStr, 
+      event_type: status.toUpperCase(), // Will be 'RELEASED'
+      tx_sig: txSig, 
+      timestamp: new Date().toISOString() 
+    };
+    
+    await this.kafkaProducer.send({ 
+      topic: process.env.KAFKA_ESCROW_TOPIC || 'escrow.events', 
+      messages: [{ value: JSON.stringify(event) }] 
+    });
+    
+    return { ok: true };
+  }
 }
 
 

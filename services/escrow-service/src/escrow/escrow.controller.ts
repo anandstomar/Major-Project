@@ -35,4 +35,12 @@ export class EscrowController {
   async notify(@Param('id') id: string) {
     return this.svc.notifyParties(id);
   }
+
+  @Post(':id/sync')
+  async syncStatus(
+    @Param('id') id: string, 
+    @Body() body: { status: string; txSig: string }
+  ) {
+    return this.svc.syncEscrowStatus(id, body.status, body.txSig);
+  }
 }

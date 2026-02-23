@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Calendar, RefreshCw, Plus, AlertTriangle, Bell, CheckCircle } from 'lucide-react';
 import { EscrowCard } from './EscrowCard';
 import { EscrowDetailPanel } from './EscrowDetailPanel';
-import {useEscrowApi}  from '../../hooks/useEscrowApi';
+import { useEscrowApi }  from '../../hooks/useEscrowApi';
 import { EscrowSummary } from './types';
 import { Modal } from '../ui/Modal';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 export const EscrowList: React.FC = () => {
+  const { publicKey, connected } = useWallet();
   const { 
     data, 
     loading, 
@@ -32,14 +34,6 @@ export const EscrowList: React.FC = () => {
   const [disputeReason, setDisputeReason] = useState('');
   
   // Create Form State
-  // const [createForm, setCreateForm] = useState({
-  //   amount: '',
-  //   currency: 'USD',
-  //   token: '',
-  //   counterparty: ''
-  // });
-
-  // Create Form State
   const [createForm, setCreateForm] = useState({
     amount: '',
     currency: 'USD',
@@ -47,6 +41,14 @@ export const EscrowList: React.FC = () => {
     beneficiary: '', 
     arbiter: ''      
   });
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      setCreateForm(prev => ({ ...prev, arbiter: publicKey.toBase58() }));
+    } else {
+      setCreateForm(prev => ({ ...prev, arbiter: '' }));
+    }
+  }, [connected, publicKey]);
 
   // Initial fetch
   useEffect(() => {
@@ -79,7 +81,13 @@ export const EscrowList: React.FC = () => {
     setActiveModal(type);
     setDisputeReason('');
     if (type === 'create') {
-      setCreateForm({ amount: '', currency: 'USD', token: '', beneficiary: '', arbiter: '' });
+      setCreateForm({ 
+        amount: '', 
+        currency: 'USD', 
+        token: '', 
+        beneficiary: '', 
+        arbiter: connected && publicKey ? publicKey.toBase58() : '' 
+      });
     }
   };
 
@@ -99,7 +107,11 @@ export const EscrowList: React.FC = () => {
       } else if (activeModal === 'notify' && actionTargetId) {
         await notifyParties(actionTargetId);
       } else if (activeModal === 'create') {
-        // Send the real Solana parameters to the hook
+        if (!connected) {
+          alert("Please connect your Phantom wallet to act as the Arbiter!");
+          setIsProcessing(false);
+          return;
+        }
         await createEscrow({
           amount: parseFloat(createForm.amount),
           beneficiary: createForm.beneficiary,
@@ -364,15 +376,32 @@ export const EscrowList: React.FC = () => {
             />
           </div>
 
+         
+
           <div>
             <label className="block text-sm font-medium text-[#1f1e1d] mb-1">Arbiter Public Key</label>
             <input 
               type="text"
-              className="w-full p-2 border border-[#e0e0dc] rounded-md text-sm font-mono focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] outline-none"
+              className={`w-full p-2 border border-[#e0e0dc] rounded-md text-sm font-mono focus:ring-1 focus:ring-[#BE3F2F] focus:border-[#BE3F2F] outline-none transition-colors ${
+                connected ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-emerald-200' : ''
+              }`}
               placeholder="e.g., 7AbC... (Solana Address)"
               value={createForm.arbiter}
               onChange={(e) => setCreateForm({...createForm, arbiter: e.target.value})}
+              readOnly={connected}
             />
+            {connected && (
+              <p className="flex items-center gap-1.5 mt-2 text-xs font-medium text-emerald-600">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Auto-filled from connected Phantom wallet
+              </p>
+            )}
+            {!connected && (
+              <p className="flex items-center gap-1.5 mt-2 text-xs font-medium text-amber-600">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Please connect your wallet to act as the Arbiter
+              </p>
+            )}
           </div>
           
           <div className="grid grid-cols-2 gap-4">

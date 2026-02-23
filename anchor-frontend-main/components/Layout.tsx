@@ -7,6 +7,7 @@ import {
 import { NavItem } from '../types';
 import { SmartSearch } from './SmartSearch';
 import { Logo } from './ui/Assets';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 // Product-focused navigation (DevOps/GitOps removed)
 const NAV_ITEMS: NavItem[] = [
@@ -134,6 +135,10 @@ export const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
               <div className="h-6 w-px bg-[#e0e0dc] mx-2" />
 
               <div className="flex items-center gap-4">
+              <WalletMultiButton 
+                  style={{ height: '36px', padding: '0 16px', borderRadius: '6px', fontSize: '14px' }} 
+                  className="!bg-[#1f1e1d] hover:!bg-[#3a3935] !transition-colors font-medium shadow-sm" 
+                />
                 <button className="relative text-[#5d5c58] hover:text-[#1f1e1d] transition-colors">
                    <Bell size={20} />
                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#BE3F2F] rounded-full border border-[#fbfbfa]"></span>
