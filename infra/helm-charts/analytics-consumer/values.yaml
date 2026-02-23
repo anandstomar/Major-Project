@@ -1,8 +1,7 @@
 image:
-  repository: ghcr.io/anandstomar/major-project/spark-consumer
-  tag: "latest"
+  repository: ghcr.io/anandstomar/major-project/analytics-consumer
+  tag: "4023640e08b3ee2dab219c3b8ba05af986589282"
   pullPolicy: Always
-
 spark:
   version: "3.5.1"
   driver:

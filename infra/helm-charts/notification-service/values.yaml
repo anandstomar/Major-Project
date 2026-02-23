@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/notification-service
-  tag: ad1de411ca65ed36132bda8ae87c9640849e7068
+  tag: 4023640e08b3ee2dab219c3b8ba05af986589282
   pullPolicy: Always
 service:
   type: ClusterIP
