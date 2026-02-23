@@ -11,6 +11,7 @@ interface EscrowDetailPanelProps {
   onClose: () => void;
   onResolve: (requestId: string) => void;
   onRaiseDispute: (requestId: string) => void;
+  onResolveAsArbiter: (requestId: string, resolution: 'buyer' | 'seller') => void;
   userRoles?: string[];
 }
 
@@ -20,6 +21,7 @@ export const EscrowDetailPanel: React.FC<EscrowDetailPanelProps> = ({
   onClose,
   onResolve,
   onRaiseDispute,
+  onResolveAsArbiter,
   userRoles = []
 }) => {
   if (!escrow) return null;
@@ -48,11 +50,12 @@ export const EscrowDetailPanel: React.FC<EscrowDetailPanelProps> = ({
           </button>
         </div>
 
-        {/* Status Banner */}
+       {/* Status Banner */}
         <div className={clsx(
           "p-4 rounded-md border flex items-start gap-3",
           escrow.status === 'active' ? "bg-blue-50 border-blue-100 text-blue-900" :
           escrow.status === 'completed' ? "bg-emerald-50 border-emerald-100 text-emerald-900" :
+          escrow.status === 'disputed' ? "bg-purple-50 border-purple-100 text-purple-900" : // 👈 NEW
           "bg-[#fbfbfa] border-[#e0e0dc] text-[#1f1e1d]"
         )}>
           <Activity className="w-5 h-5 mt-0.5" />
@@ -162,24 +165,50 @@ export const EscrowDetailPanel: React.FC<EscrowDetailPanelProps> = ({
             View Raw Payload
           </button>
           
-          <div className="grid grid-cols-2 gap-3">
-             <button
-              onClick={() => onRaiseDispute(escrow.requestId)}
-              className="flex items-center justify-center gap-2 p-3 rounded-md border border-red-200 text-red-700 hover:bg-red-50 transition-colors text-sm font-medium"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              Raise Dispute
-            </button>
-            
-            <button
-              onClick={() => onResolve(escrow.requestId)}
-              disabled={escrow.status !== 'active' && escrow.status !== 'pending'}
-              className="flex items-center justify-center gap-2 p-3 rounded-md bg-[#1f1e1d] text-white hover:bg-black transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check className="w-4 h-4" />
-              Resolve Escrow
-            </button>
-          </div>
+          {/* 👇 Safety Check: Hide both action buttons if the escrow is finalized */}
+          {(escrow.status === 'active' || escrow.status === 'pending') && (
+            <div className="grid grid-cols-2 gap-3">
+               <button
+                onClick={() => onRaiseDispute(escrow.requestId)}
+                className="flex items-center justify-center gap-2 p-3 rounded-md border border-red-200 text-red-700 hover:bg-red-50 transition-colors text-sm font-medium"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Raise Dispute
+              </button>
+              
+              <button
+                onClick={() => onResolve(escrow.requestId)}
+                className="flex items-center justify-center gap-2 p-3 rounded-md bg-[#1f1e1d] text-white hover:bg-black transition-colors text-sm font-medium"
+              >
+                <Check className="w-4 h-4" />
+                Resolve Escrow
+              </button>
+            </div>
+          )}
+
+          {escrow.status === 'disputed' && (
+            <div className="space-y-3">
+              <div className="text-xs text-center text-purple-700 font-medium uppercase tracking-wider">
+                Arbiter Resolution Controls
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => onResolveAsArbiter(escrow.requestId, 'buyer')}
+                  className="flex items-center justify-center gap-2 p-3 rounded-md border border-purple-200 text-purple-700 hover:bg-purple-50 transition-colors text-sm font-medium"
+                >
+                  Refund Buyer
+                </button>
+                
+                <button
+                  onClick={() => onResolveAsArbiter(escrow.requestId, 'seller')}
+                  className="flex items-center justify-center gap-2 p-3 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium"
+                >
+                  <Check className="w-4 h-4" />
+                  Award Seller
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

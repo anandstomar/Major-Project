@@ -49,6 +49,30 @@
       "args": []
     },
     {
+      "name": "dispute",
+      "discriminator": [
+        216,
+        92,
+        128,
+        146,
+        202,
+        85,
+        135,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "escrow_account",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize_escrow",
       "discriminator": [
         243,
@@ -171,6 +195,48 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "resolve_dispute",
+      "discriminator": [
+        231,
+        6,
+        202,
+        6,
+        96,
+        103,
+        12,
+        230
+      ],
+      "accounts": [
+        {
+          "name": "escrow_account",
+          "writable": true
+        },
+        {
+          "name": "escrow_pda"
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true
+        },
+        {
+          "name": "destination_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "arbiter",
+          "signer": true,
+          "relations": [
+            "escrow_account"
+          ]
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -193,6 +259,26 @@
       "code": 6000,
       "name": "AlreadyReleased",
       "msg": "Escrow already released/cancelled"
+    },
+    {
+      "code": 6001,
+      "name": "EscrowIsDisputed",
+      "msg": "This escrow is currently locked in a dispute."
+    },
+    {
+      "code": 6002,
+      "name": "AlreadyDisputed",
+      "msg": "This escrow is already disputed."
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "You are not authorized to perform this action."
+    },
+    {
+      "code": 6004,
+      "name": "EscrowIsNotDisputed",
+      "msg": "This action requires the escrow to be disputed first."
     }
   ],
   "types": [
@@ -224,10 +310,13 @@
           {
             "name": "is_released",
             "type": "bool"
+          },
+          {
+            "name": "is_disputed",
+            "type": "bool"
           }
         ]
       }
     }
   ]
 }
-

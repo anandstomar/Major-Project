@@ -27,11 +27,11 @@ export function useEscrowApi() {
 
   const mapDbToUi = (item: any): EscrowSummary => {
     let uiStatus = item.status === 'released' ? 'completed' : item.status;
-    if (uiStatus === 'disputed') uiStatus = 'active';
+    // if (uiStatus === 'disputed') uiStatus = 'active';
 
     return {
       requestId: item.escrowId || item.escrow_id,
-      status: uiStatus,
+      status: uiStatus as any,
       submitter: item.initializer,
       counterparty: item.beneficiary,
       amount: { value: Number(item.amount), currency: 'USD', token: 'USDC' },
@@ -44,7 +44,7 @@ export function useEscrowApi() {
     };
   };
 
-  const fetchList = useCallback(async (params?: { status?: string; search?: string; page?: number }) => {
+const fetchList = useCallback(async (params?: { status?: string; search?: string; page?: number }) => {
     setLoading(true);
     try {
       const res = await fetchWithRetry('/api/v1/escrow');
@@ -55,6 +55,21 @@ export function useEscrowApi() {
       if (!Array.isArray(fetchedData)) throw new Error('API returned invalid data format.');
 
       let mappedData = fetchedData.map(mapDbToUi);
+
+      // 👇 Re-added the filtering logic here!
+      if (params?.status && params.status !== 'All') {
+        mappedData = mappedData.filter(item => item.status === params.status?.toLowerCase());
+      }
+      
+      if (params?.search) {
+        const q = params.search.toLowerCase();
+        mappedData = mappedData.filter(item => 
+          item.requestId.toLowerCase().includes(q) || 
+          item.submitter.toLowerCase().includes(q) ||
+          item.txHash?.toLowerCase().includes(q)
+        );
+      }
+
       setData(mappedData);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch escrow list');
@@ -286,14 +301,169 @@ export function useEscrowApi() {
 
   }, [wallet, connection]);
 
+  // 👇 NEW: Pure Web3 Dispute Logic (Locks the vault on-chain)
   const raiseDispute = useCallback(async (requestId: string) => {
-    const res = await fetchWithRetry(`/api/v1/escrow/${requestId}/dispute`, { method: 'POST' });
-    if (!res.ok) throw new Error('Failed to raise dispute');
-  }, []);
+    if (!wallet.publicKey || !wallet.signTransaction) {
+      throw new Error("Please connect your Phantom wallet first!");
+    }
 
-  const notifyParties = useCallback(async (requestId: string) => {
-    await fetchWithRetry(`/api/v1/escrow/${requestId}/notify`, { method: 'POST' });
-  }, []);
+    const targetEscrow = data.find(e => e.requestId === requestId);
+    if (targetEscrow?.status === 'completed' || targetEscrow?.status === 'disputed') {
+      alert("Cannot dispute this escrow in its current state!");
+      return; 
+    }
+
+    // 1. Initialize Anchor Provider
+    const provider = new AnchorProvider(connection, wallet as any, { commitment: 'confirmed' });
+    const program = new Program(idl as Idl, provider);
+    const escrowPda = new PublicKey(requestId);
+
+    console.log("Building Dispute Instruction...");
+    
+    // 2. Build the Dispute Transaction
+    const tx = new Transaction();
+    const disputeIx = await (program.methods as any)
+      .dispute()
+      .accounts({
+        escrowAccount: escrowPda,
+        authority: wallet.publicKey, // Phantom Wallet signs as the authority
+      })
+      .instruction();
+
+    tx.add(disputeIx);
+
+    const latestBlockhash = await connection.getLatestBlockhash();
+    tx.recentBlockhash = latestBlockhash.blockhash;
+    tx.feePayer = wallet.publicKey;
+
+    console.log("Waiting for Phantom Approval to Lock Vault...");
+    
+    // 🚀 3. TRIGGER PHANTOM TO SIGN THE DISPUTE
+    const signature = await wallet.sendTransaction(tx, connection);
+
+    console.log("Dispute Sent! Confirming on Solana...");
+    await connection.confirmTransaction({ signature, ...latestBlockhash });
+
+    console.log("Vault successfully locked! Transaction Hash:", signature);
+
+    // 4. Sync the Disputed status back to the NestJS Database
+    try {
+      const token = localStorage.getItem("access_token");
+      await fetchWithRetry(`/api/v1/escrow/${requestId}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: 'DISPUTED', txSig: signature }) 
+      });
+      console.log("Dispute synced to database!");
+    } catch (err) {
+      console.error("Failed to sync dispute with backend:", err);
+    }
+
+    // 5. Optimistically update the UI
+    setData(prev => prev.map(item => 
+      item.requestId === requestId ? { ...item, status: 'disputed' } : item
+    ));
+
+  }, [wallet, connection, data]);
+
+  // 👇 NEW: The Arbiter's Supreme Court function
+  const resolveDisputeAsArbiter = useCallback(async (requestId: string, resolution: 'buyer' | 'seller') => {
+    if (!wallet.publicKey || !wallet.signTransaction) {
+      throw new Error("Please connect your Phantom wallet first!");
+    }
+
+    const provider = new AnchorProvider(connection, wallet as any, { commitment: 'confirmed' });
+    const program = new Program(idl as Idl, provider);
+    const escrowPda = new PublicKey(requestId);
+
+    console.log("Fetching Disputed Escrow State...");
+    const escrowState = await (program.account as any).escrowAccount.fetch(escrowPda);
+    
+    // Determine the winner based on the Arbiter's button click
+    const winnerPubkey = resolution === 'seller' 
+      ? (escrowState.beneficiary as PublicKey) 
+      : (escrowState.initializer as PublicKey);
+      
+    const amount = escrowState.amount as BN;
+
+    console.log(`Arbiter ruling in favor of: ${resolution.toUpperCase()}`);
+    console.log("Generating dummy tokens for Arbiter resolution...");
+    
+    // Devnet Dummy Token Generation (Same as standard resolve)
+    const mintKeypair = Keypair.generate();
+    const lamports = await getMinimumBalanceForRentExemptMint(connection);
+
+    const escrowTokenAccount = getAssociatedTokenAddressSync(mintKeypair.publicKey, escrowPda, true);
+    const winnerTokenAccount = getAssociatedTokenAddressSync(mintKeypair.publicKey, winnerPubkey, true);
+
+    const tx = new Transaction().add(
+      SystemProgram.createAccount({
+        fromPubkey: wallet.publicKey,
+        newAccountPubkey: mintKeypair.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID,
+      }),
+      createInitializeMintInstruction(mintKeypair.publicKey, 6, wallet.publicKey, null),
+      createAssociatedTokenAccountInstruction(wallet.publicKey, escrowTokenAccount, escrowPda, mintKeypair.publicKey),
+      createMintToInstruction(mintKeypair.publicKey, escrowTokenAccount, wallet.publicKey, amount.toNumber()),
+      createAssociatedTokenAccountInstruction(wallet.publicKey, winnerTokenAccount, winnerPubkey, mintKeypair.publicKey)
+    );
+
+    console.log("Building Arbiter Resolution Instruction...");
+    
+    // 👇 Calls the NEW Rust function we just deployed!
+    const resolveIx = await (program.methods as any)
+      .resolveDispute()
+      .accounts({
+        escrowAccount: escrowPda,
+        escrowPda: escrowPda,
+        escrowTokenAccount: escrowTokenAccount,
+        destinationTokenAccount: winnerTokenAccount, // Forces funds to the winner!
+        tokenProgram: TOKEN_PROGRAM_ID,
+        arbiter: wallet.publicKey, // Must match the Arbiter assigned at creation
+      })
+      .instruction();
+
+    tx.add(resolveIx);
+
+    const latestBlockhash = await connection.getLatestBlockhash();
+    tx.recentBlockhash = latestBlockhash.blockhash;
+    tx.feePayer = wallet.publicKey;
+    tx.sign(mintKeypair);
+
+    console.log("Waiting for Arbiter (Phantom) Approval...");
+    const signature = await wallet.sendTransaction(tx, connection);
+
+    console.log("Verdict enforced on Solana! Transaction Hash:", signature);
+
+    // Sync back to database: If Seller wins = 'RELEASED' (completed). If Buyer wins = 'CANCELLED' (refunded).
+    const finalDbStatus = resolution === 'seller' ? 'RELEASED' : 'CANCELLED';
+    const finalUiStatus = resolution === 'seller' ? 'completed' : 'cancelled';
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await fetchWithRetry(`/api/v1/escrow/${requestId}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: finalDbStatus, txSig: signature }) 
+      });
+    } catch (err) {
+      console.error("Failed to sync Arbiter resolution with backend:", err);
+    }
+
+    // Optimistically update the UI to the final state
+    setData(prev => prev.map(item => 
+      item.requestId === requestId ? { ...item, status: finalUiStatus, txHash: signature } : item
+    ));
+
+  }, [wallet, connection]);
 
   const getEscrowDetails = useCallback(async (requestId: string) => {
     try {
@@ -306,7 +476,15 @@ export function useEscrowApi() {
     }
   }, []);
 
-  return { data, loading, error, fetchList, resolveEscrow, raiseDispute, notifyParties, getEscrowDetails, createEscrow };
+    const notifyParties = useCallback(async (requestId: string) => {
+    const token = localStorage.getItem("access_token");
+    await fetchWithRetry(`/api/v1/escrow/${requestId}/notify`, {
+      method: 'POST',
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    });
+  }, []);
+
+  return { data, loading, error, fetchList, resolveEscrow, raiseDispute, notifyParties, getEscrowDetails, createEscrow, resolveDisputeAsArbiter };
 }
 
 

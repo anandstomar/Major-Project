@@ -14,7 +14,7 @@ export interface EscrowEvent {
 
 export interface EscrowSummary {
   requestId: string;
-  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'failed';
+  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'failed'| 'disputed';
   submitter: string;
   counterparty?: string;
   amount: EscrowAmount;

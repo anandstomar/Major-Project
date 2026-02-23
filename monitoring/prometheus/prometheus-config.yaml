@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: observability
+data:
+  prometheus.yml: |
+    scrape_configs:
+      - job_name: 'indexer'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['indexer.default.svc.cluster.local:8083'] 
+
+      - job_name: 'anchor-service'
+        metrics_path: '/metrics'
+        static_configs:
+          # Updated to match your exact service name and K8s port
+          - targets: ['anchor-service.default.svc.cluster.local:8080']
+
+      - job_name: 'query-service'
+        metrics_path: '/metrics'
+        static_configs:
+          # Updated to match your exact K8s port
+          - targets: ['query-service.default.svc.cluster.local:8081']

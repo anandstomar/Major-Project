@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("spark-consumer")
 
 # Environment (with sensible defaults)
-KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "kafka-external.default.svc.cluster.local:9094")
+KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "kafka-external:9092")
 KAFKA_TOPIC = os.environ.get("KAFKA_TOPIC", "anchors.completed")
 KAFKA_OUT_TOPIC = os.environ.get("KAFKA_OUT_TOPIC", "analytics.anchors.hourly")
 CHECKPOINT_BASE = os.environ.get("CHECKPOINT_BASE", "/tmp/checkpoints/analytics")
@@ -125,7 +125,7 @@ def main():
     #     .config("spark.hadoop.fs.s3a.secret.key", os.environ.get("S3A_SECRET_KEY", "minioadmin")) \
     #     .config("spark.hadoop.fs.s3a.path.style.access", "true") \
     #     .getOrCreate()
-    os.makedirs("C:\\tmp\\spark", exist_ok=True)
+    os.makedirs("/tmp/spark", exist_ok=True)
     spark = SparkSession.builder \
         .appName(APP_NAME) \
         \
@@ -135,10 +135,10 @@ def main():
         .config("spark.sql.shuffle.partitions", "1") \
         .config("spark.default.parallelism", "1") \
         .config("spark.sql.parquet.compression.codec", "gzip") \
-        .config("spark.local.dir", "C:\\tmp\\spark") \
+        .config("spark.local.dir", "/tmp/spark") \
         \
         .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4") \
-        .config("spark.hadoop.fs.s3a.endpoint", os.environ.get("S3A_ENDPOINT", "http://minio:9000")) \
+        .config("spark.hadoop.fs.s3a.endpoint", os.environ.get("S3A_ENDPOINT", "http://minio.default.svc.cluster.local:9000")) \
         .config("spark.hadoop.fs.s3a.access.key", os.environ.get("S3A_ACCESS_KEY", "minioadmin")) \
         .config("spark.hadoop.fs.s3a.secret.key", os.environ.get("S3A_SECRET_KEY", "minioadmin")) \
         .config("spark.hadoop.fs.s3a.path.style.access", "true") \

@@ -19,7 +19,8 @@ export const EscrowList: React.FC = () => {
     raiseDispute, 
     notifyParties,
     getEscrowDetails,
-    createEscrow
+    createEscrow,
+    resolveDisputeAsArbiter
   } = useEscrowApi();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -41,6 +42,18 @@ export const EscrowList: React.FC = () => {
     beneficiary: '', 
     arbiter: ''      
   });
+
+  const handleArbiterAction = async (id: string, resolution: 'buyer' | 'seller') => {
+    try {
+      // 1. Wait for Phantom and Solana to finish processing
+      await resolveDisputeAsArbiter(id, resolution);
+      
+      // 2. Smoothly close the panel once the transaction succeeds!
+      handleCloseDetails(); 
+    } catch (error) {
+      console.error("Arbiter action failed or was cancelled:", error);
+    }
+  };
 
   useEffect(() => {
     if (connected && publicKey) {
@@ -255,6 +268,7 @@ export const EscrowList: React.FC = () => {
         onClose={handleCloseDetails}
         onResolve={(id) => openActionModal('resolve', id)}
         onRaiseDispute={(id) => openActionModal('dispute', id)}
+        onResolveAsArbiter={handleArbiterAction}
       />
 
       {/* Modals */}

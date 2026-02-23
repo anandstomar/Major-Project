@@ -29,7 +29,7 @@ env:
 metrics:
   enabled: true
   path: /metrics
-  port: 8080
+  port: 2112
 # image:
 #   repository: ghcr.io/anandstomar/major-project/anchor-service
 #   tag: latest

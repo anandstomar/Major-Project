@@ -27,6 +27,7 @@ const statusConfig = {
   completed: { color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: Check, label: 'Completed' },
   failed: { color: 'text-red-700 bg-red-50 border-red-200', icon: XCircle, label: 'Failed' },
   cancelled: { color: 'text-gray-600 bg-gray-50 border-gray-200', icon: Ban, label: 'Cancelled' },
+  disputed: { color: 'text-purple-700 bg-purple-50 border-purple-200', icon: ShieldAlert, label: 'Disputed' },
 };
 
 export const EscrowCard: React.FC<EscrowCardProps> = ({
@@ -159,13 +160,15 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
             <Bell className="w-4 h-4" />
           </button>
           
-          <button
-            onClick={(e) => { e.stopPropagation(); onRaiseDispute(escrow.requestId); }}
-            className="p-2 text-[#8c8b88] hover:text-[#BE3F2F] transition-colors rounded-full hover:bg-red-50"
-            aria-label="Raise dispute"
-          >
-            <ShieldAlert className="w-4 h-4" />
-          </button>
+         {escrow.status !== 'completed' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRaiseDispute(escrow.requestId); }}
+              className="p-2 text-[#8c8b88] hover:text-[#BE3F2F] transition-colors rounded-full hover:bg-red-50"
+              aria-label="Raise dispute"
+            >
+              <ShieldAlert className="w-4 h-4" />
+            </button>
+          )}
 
           {(escrow.status === 'active' || escrow.status === 'pending') && (
             <button
