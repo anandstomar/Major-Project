@@ -39,8 +39,9 @@ export class EscrowController {
   @Post(':id/sync')
   async syncStatus(
     @Param('id') id: string, 
-    @Body() body: { status: string; txSig: string }
+    @Body() body: any
   ) {
-    return this.svc.syncEscrowStatus(id, body.status, body.txSig);
+    const { status, txSig, ...extra } = body;
+    return this.svc.syncEscrowStatus(id, status, txSig, extra);
   }
 }

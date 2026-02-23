@@ -37,33 +37,38 @@ export class EscrowService implements OnModuleInit {
     });
   }
 
-  private async handleKafkaEvent(event: any) {
-    if (event.event_type === 'CREATED') {
-      await this.prisma.escrow.upsert({
-        where: { escrowId: event.escrow_id },
-        update: {},
-        create: {
-          escrowId: event.escrow_id,
-          initializer: event.initializer,
-          beneficiary: event.beneficiary,
-          arbiter: event.arbiter,
-          amount: event.amount,
-          txSig: event.tx_sig,
-          status: 'active'
-        }
-      });
-    } 
-    else if (['RELEASED', 'CANCELLED', 'DISPUTED'].includes(event.event_type)) {
-      await this.prisma.escrow.update({
-        where: { escrowId: event.escrow_id },
-        data: { 
-          status: event.event_type.toLowerCase(), 
-          ...(event.tx_sig ? { txSig: event.tx_sig } : {})
-        }
-      });
+ private async handleKafkaEvent(event: any) {
+    try {
+      if (event.event_type === 'CREATED') {
+        await this.prisma.escrow.upsert({
+          where: { escrowId: event.escrow_id },
+          update: {},
+          create: {
+            escrowId: event.escrow_id,
+            initializer: event.initializer,
+            beneficiary: event.beneficiary,
+            arbiter: event.arbiter,
+            amount: event.amount,
+            txSig: event.tx_sig,
+            status: 'active'
+          }
+        });
+      } 
+      else if (['RELEASED', 'CANCELLED', 'DISPUTED'].includes(event.event_type)) {
+        await this.prisma.escrow.update({
+          where: { escrowId: event.escrow_id },
+          data: { 
+            status: event.event_type.toLowerCase(), 
+            ...(event.tx_sig ? { txSig: event.tx_sig } : {})
+          }
+        });
+      }
+    } catch (error: any) {
+      // 👇 Catch the error so Kafka doesn't crash! It will log it and process the next message.
+      this.logger.warn(`Skipping Kafka Event for ${event.escrow_id}: ${error.message}`);
     }
   }
-
+  
   async findAll() {
     return this.prisma.escrow.findMany({ orderBy: { createdAt: 'desc' } });
   }
@@ -110,12 +115,13 @@ export class EscrowService implements OnModuleInit {
     return { ok: true };
   }
 
-  async syncEscrowStatus(escrowPdaStr: string, status: string, txSig: string) {
+  async syncEscrowStatus(escrowPdaStr: string, status: string, txSig: string,extra?: any) {
     const event = { 
       escrow_id: escrowPdaStr, 
       event_type: status.toUpperCase(), // Will be 'RELEASED'
       tx_sig: txSig, 
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString(),
+      ...(extra || {})
     };
     
     await this.kafkaProducer.send({ 

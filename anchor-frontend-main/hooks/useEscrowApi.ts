@@ -63,7 +63,7 @@ export function useEscrowApi() {
     }
   }, []);
 
-  // 👇 THE MAGIC HAPPENS HERE: Pure Frontend Signing
+ // 👇 THE MAGIC HAPPENS HERE: Pure Frontend Signing
   const createEscrow = useCallback(async (payload: { beneficiary: string; arbiter: string; amount: number }) => {
     if (!wallet.publicKey || !wallet.signTransaction) {
       throw new Error("Please connect your Phantom wallet first!");
@@ -73,8 +73,18 @@ export function useEscrowApi() {
     const provider = new AnchorProvider(connection, wallet as any, { commitment: 'confirmed' });
     const program = new Program(idl as Idl, provider);
 
-    const beneficiaryPubkey = new PublicKey(payload.beneficiary);
-    const arbiterPubkey = new PublicKey(payload.arbiter);
+    // 👇 ADDED: Bulletproof PublicKey validation
+    let beneficiaryPubkey: PublicKey;
+    let arbiterPubkey: PublicKey;
+    
+    try {
+      // .trim() removes any accidental spaces copied from the UI
+      beneficiaryPubkey = new PublicKey(payload.beneficiary.trim());
+      arbiterPubkey = new PublicKey(payload.arbiter.trim());
+    } catch (err) {
+      throw new Error("Invalid wallet address. Please check that the Beneficiary and Arbiter fields are correct Solana addresses without extra spaces.");
+    }
+
     const initializerPubkey = wallet.publicKey; // Phantom's address!
 
     // 2. Derive the Escrow PDA
@@ -134,10 +144,34 @@ export function useEscrowApi() {
     // 🚀 TRIGGER PHANTOM POPUP!
     const signature = await wallet.sendTransaction(tx, connection);
     
+    // ... inside createEscrow ...
     console.log("Transaction Sent! Confirming on Solana...");
     await connection.confirmTransaction({ signature, ...latestBlockhash });
 
     console.log("Success! Transaction Hash:", signature);
+
+    // 👇 NEW: Sync the CREATION to the NestJS Database!
+    try {
+      const token = localStorage.getItem("access_token");
+      await fetchWithRetry(`/api/v1/escrow/${escrowPda.toBase58()}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ 
+          status: 'CREATED', 
+          txSig: signature,
+          initializer: initializerPubkey.toBase58(),
+          beneficiary: payload.beneficiary,
+          arbiter: payload.arbiter,
+          amount: payload.amount
+        })
+      });
+      console.log("Creation synced to database!");
+    } catch (err) {
+      console.error("Failed to sync creation with backend:", err);
+    }
 
     // Optimistically update the UI
     const newEscrow = mapDbToUi({
@@ -156,55 +190,50 @@ export function useEscrowApi() {
 
   }, [wallet, connection]);
 
-  // 👇 THE MAGIC HAPPENS HERE: Pure Frontend Resolving
   const resolveEscrow = useCallback(async (requestId: string) => {
     if (!wallet.publicKey || !wallet.signTransaction) {
       throw new Error("Please connect your Phantom wallet first!");
     }
 
-    // 1. Initialize Anchor Provider
     const provider = new AnchorProvider(connection, wallet as any, { commitment: 'confirmed' });
     const program = new Program(idl as Idl, provider);
     const escrowPda = new PublicKey(requestId);
 
     console.log("Fetching Escrow State...");
-    
-    // 2. Read the on-chain data to find the exact Beneficiary
     const escrowState = await (program.account as any).escrowAccount.fetch(escrowPda);
     const beneficiaryPubkey = escrowState.beneficiary as PublicKey;
+    const amount = escrowState.amount as BN;
 
-    console.log("Locating Escrow Token Accounts...");
-    
-    // 3. Dynamically find the exact Mint and Token Account owned by the Escrow PDA
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(escrowPda, { programId: TOKEN_PROGRAM_ID });
-    if (tokenAccounts.value.length === 0) {
-        throw new Error("No tokens found in this Escrow! It may have already been resolved.");
-    }
+    console.log("Generating dummy tokens for resolution...");
+    const mintKeypair = Keypair.generate();
+    const lamports = await getMinimumBalanceForRentExemptMint(connection);
 
-    const escrowTokenAccount = tokenAccounts.value[0].pubkey;
-    const mintPubkey = new PublicKey(tokenAccounts.value[0].account.data.parsed.info.mint);
+    // Derive the specific token accounts for this brand new dummy mint
+    const escrowTokenAccount = getAssociatedTokenAddressSync(mintKeypair.publicKey, escrowPda, true);
+    const beneficiaryTokenAccount = getAssociatedTokenAddressSync(mintKeypair.publicKey, beneficiaryPubkey, true);
 
-    // 4. Derive the Beneficiary's Token Account (where the funds will go)
-    const beneficiaryTokenAccount = getAssociatedTokenAddressSync(mintPubkey, beneficiaryPubkey, true);
+    const tx = new Transaction().add(
+      // 1. Create a brand new Dummy Mint on the fly
+      SystemProgram.createAccount({
+        fromPubkey: wallet.publicKey,
+        newAccountPubkey: mintKeypair.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID,
+      }),
+      createInitializeMintInstruction(mintKeypair.publicKey, 6, wallet.publicKey, null),
 
-    const tx = new Transaction();
+      // 2. Create the Vault (PDA) Token Account & Fund it so it's not empty!
+      createAssociatedTokenAccountInstruction(wallet.publicKey, escrowTokenAccount, escrowPda, mintKeypair.publicKey),
+      createMintToInstruction(mintKeypair.publicKey, escrowTokenAccount, wallet.publicKey, amount.toNumber()),
 
-    // 5. Check if the Beneficiary already has a token account for this Mint. If not, build one!
-    const beneficiaryAtaInfo = await connection.getAccountInfo(beneficiaryTokenAccount);
-    if (!beneficiaryAtaInfo) {
-      tx.add(
-        createAssociatedTokenAccountInstruction(
-          wallet.publicKey, // Payer (Arbiter pays the tiny rent fee)
-          beneficiaryTokenAccount,
-          beneficiaryPubkey,
-          mintPubkey
-        )
-      );
-    }
+      // 3. Create the Beneficiary Token Account to receive the funds
+      createAssociatedTokenAccountInstruction(wallet.publicKey, beneficiaryTokenAccount, beneficiaryPubkey, mintKeypair.publicKey)
+    );
 
     console.log("Building Release Instruction...");
-
-    // 6. Append the Anchor Smart Contract Release Instruction
+    
+    // 4. Append the Anchor Release Instruction
     const releaseIx = await (program.methods as any)
       .release()
       .accounts({
@@ -213,26 +242,42 @@ export function useEscrowApi() {
         escrowTokenAccount: escrowTokenAccount,
         beneficiaryTokenAccount: beneficiaryTokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
-        arbiter: wallet.publicKey, // Phantom is the Arbiter!
+        arbiter: wallet.publicKey,
       })
       .instruction();
 
     tx.add(releaseIx);
 
-    // 7. Prepare and send to Phantom
     const latestBlockhash = await connection.getLatestBlockhash();
     tx.recentBlockhash = latestBlockhash.blockhash;
     tx.feePayer = wallet.publicKey;
 
+    // 👇 We MUST partially sign with the dummy Mint keypair because it is creating a new account!
+    tx.sign(mintKeypair);
+
     console.log("Waiting for Phantom Approval...");
-    
-    // 🚀 TRIGGER PHANTOM POPUP!
     const signature = await wallet.sendTransaction(tx, connection);
 
     console.log("Transaction Sent! Confirming on Solana...");
     await connection.confirmTransaction({ signature, ...latestBlockhash });
 
     console.log("Successfully resolved via Phantom! Transaction Hash:", signature);
+
+    // 👇 Sync the success back to your NestJS Database!
+    try {
+      const token = localStorage.getItem("access_token");
+      await fetchWithRetry(`/api/v1/escrow/${requestId}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: 'RELEASED', txSig: signature })
+      });
+      console.log("Backend database synced successfully.");
+    } catch (err) {
+      console.error("Failed to sync with backend:", err);
+    }
 
     // Optimistically update the UI to green "Completed" status
     setData(prev => prev.map(item => 
