@@ -1,9 +1,26 @@
 import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
 import { NotificationService } from './notification.service';
+import { EmailService } from './email.service';
 
 @Controller('api/v1/notifications')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor(
+    private readonly notificationService: NotificationService,
+    private readonly emailService: EmailService
+  ) {}
+  
+  @EventPattern('scheduler.request.created') // Make sure Scheduler emits this!
+  async handleNewBatch(@Payload() message: any) {
+    // message = { request_id: "req-123", size: 450, cost: "0.04 SOL" }
+    
+    console.log('Received new batch notification:', message);
+    
+    await this.emailService.sendApprovalEmail(
+      message.request_id, 
+      message.size || 0,
+      message.estimated_gas || 'Unknown'
+    );
+  }
 
   @Get('health')
   checkHealth() {
@@ -31,3 +48,11 @@ export class NotificationController {
     return this.notificationService.deleteRule(Number(id));
   }
 }
+
+function EventPattern(arg0: string): (target: NotificationController, propertyKey: "handleNewBatch", descriptor: TypedPropertyDescriptor<(message: any) => Promise<void>>) => void | TypedPropertyDescriptor<...> {
+  throw new Error('Function not implemented.');
+}
+function Payload(): (target: NotificationController, propertyKey: "handleNewBatch", parameterIndex: 0) => void {
+  throw new Error('Function not implemented.');
+}
+

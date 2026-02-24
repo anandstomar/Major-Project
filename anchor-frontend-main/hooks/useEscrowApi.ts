@@ -47,7 +47,7 @@ export function useEscrowApi() {
 const fetchList = useCallback(async (params?: { status?: string; search?: string; page?: number }) => {
     setLoading(true);
     try {
-      const res = await fetchWithRetry('/api/v1/escrow');
+      const res = await fetchWithRetry('/escrow');
       let fetchedData = await res.json();
       if (fetchedData && !Array.isArray(fetchedData) && Array.isArray(fetchedData.data)) {
         fetchedData = fetchedData.data;
@@ -168,7 +168,7 @@ const fetchList = useCallback(async (params?: { status?: string; search?: string
     // 👇 NEW: Sync the CREATION to the NestJS Database!
     try {
       const token = localStorage.getItem("access_token");
-      await fetchWithRetry(`/api/v1/escrow/${escrowPda.toBase58()}/sync`, {
+      await fetchWithRetry(`/escrow/${escrowPda.toBase58()}/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +281,7 @@ const fetchList = useCallback(async (params?: { status?: string; search?: string
     // 👇 Sync the success back to your NestJS Database!
     try {
       const token = localStorage.getItem("access_token");
-      await fetchWithRetry(`/api/v1/escrow/${requestId}/sync`, {
+      await fetchWithRetry(`/escrow/${requestId}/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -349,7 +349,7 @@ const fetchList = useCallback(async (params?: { status?: string; search?: string
     // 4. Sync the Disputed status back to the NestJS Database
     try {
       const token = localStorage.getItem("access_token");
-      await fetchWithRetry(`/api/v1/escrow/${requestId}/sync`, {
+      await fetchWithRetry(`/escrow/${requestId}/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -446,7 +446,7 @@ const fetchList = useCallback(async (params?: { status?: string; search?: string
 
     try {
       const token = localStorage.getItem("access_token");
-      await fetchWithRetry(`/api/v1/escrow/${requestId}/sync`, {
+      await fetchWithRetry(`/escrow/${requestId}/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -478,7 +478,7 @@ const fetchList = useCallback(async (params?: { status?: string; search?: string
 
     const notifyParties = useCallback(async (requestId: string) => {
     const token = localStorage.getItem("access_token");
-    await fetchWithRetry(`/api/v1/escrow/${requestId}/notify`, {
+    await fetchWithRetry(`/escrow/${requestId}/notify`, {
       method: 'POST',
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
     });
