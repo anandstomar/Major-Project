@@ -9,7 +9,7 @@ export const LandingPage = () => {
   const [activeStep, setActiveStep] = useState(0);
 
   const navigateToLogin = () => {
-    window.location.hash = "/login";
+    window.location.href = "/login";
   };
 
 
