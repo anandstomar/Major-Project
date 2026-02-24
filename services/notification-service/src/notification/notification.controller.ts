@@ -14,14 +14,16 @@ export class NotificationController {
   // 🟢 Kafka Listeners (Triggered by Microservice)
   // ------------------------------------------
 
-  // 1. New "Human-in-the-Loop" Approval (From Scheduler)
-  @EventPattern('scheduler.request.created')
-  async handleApprovalRequest(@Payload() message: any) {
-    console.log('📧 Approval Required:', message);
+  @EventPattern('anchors.preview')
+  async handleAnchorPreview(@Payload() message: any) {
+
+    console.log('📧 Approval Required for Preview:', message.preview_id);
+
+    // Map the new fields to our Email Service
     await this.emailService.sendApprovalEmail(
-      message.request_id, 
-      message.size, 
-      message.estimated_gas
+      message.preview_id,                // Was request_id
+      message.leaf_count || 0,           // Was size
+      `${message.estimated_gas} Lamports` // Format the cost nicely
     );
   }
 

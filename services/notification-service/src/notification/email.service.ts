@@ -24,10 +24,16 @@ export class EmailService {
     this.transporter = nodemailer.createTransport(transportConfig);
   }
 
-  // 1. The "Human-in-the-Loop" Approval Email
-  async sendApprovalEmail(requestId: string, batchSize: number, estimatedCost: string): Promise<void> {
-    // Allow this URL to be configured via ENV for production
-    const dashboardUrl = process.env.DASHBOARD_URL || `http://localhost:5173/#/scheduler?highlight=${requestId}`;
+ async sendApprovalEmail(requestId: string, batchSize: number, estimatedCost: string | number): Promise<void> {
+    // If it's a number (Lamports), convert to SOL for readability
+    let costDisplay = estimatedCost.toString();
+    if (typeof estimatedCost === 'number' || !isNaN(Number(estimatedCost))) {
+        const lamports = Number(estimatedCost);
+        const sol = lamports / 1_000_000_000; // 1 Billion Lamports = 1 SOL
+        costDisplay = `${sol.toFixed(6)} SOL (${lamports} Lamports)`;
+    }
+
+    const dashboardUrl = process.env.DASHBOARD_URL || `http://localhost:5173/#/scheduler`;
 
     const htmlContent = `
       <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e0e0dc; border-radius: 8px; max-width: 500px;">
@@ -40,34 +46,29 @@ export class EmailService {
             <td>${requestId}</td>
           </tr>
           <tr>
-            <th style="color: #8c8b88;">Size:</th>
-            <td>${batchSize} events</td>
+            <th style="color: #8c8b88;">Events:</th>
+            <td>${batchSize} items</td>
           </tr>
           <tr>
             <th style="color: #8c8b88;">Est. Cost:</th>
-            <td style="color: #10b981; font-weight: bold;">${estimatedCost}</td>
+            <td style="color: #10b981; font-weight: bold;">${costDisplay}</td>
           </tr>
         </table>
-
+        
         <a href="${dashboardUrl}" style="background-color: #BE3F2F; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
           Review & Approve Batch
         </a>
-        
-        <p style="margin-top: 20px; font-size: 12px; color: #a8a29e;">
-          This link connects to your internal dashboard. Ensure you are on the VPN.
-        </p>
       </div>
     `;
 
+    // ... sendMail call remains the same ...
     await this.transporter.sendMail({
       from: process.env.EMAIL_FROM || '"System Scheduler" <scheduler@internal.platform>',
       to: process.env.NOTIFY_EMAIL_TO || 'admin@company.com',
-      subject: `⚠️ Approval Needed: Batch ${requestId.split('-')[0]}`,
+      subject: `⚠️ Approval Needed: ${requestId.substring(0, 15)}...`,
       html: htmlContent,
     });
-
-    console.log(`[Email] Sent approval request for ${requestId}`);
-  }
+}
 
   // 2. 👇 NEW: The Anchor Confirmation Email (Required for Success Notifications)
   async sendAnchorNotification(msg: any): Promise<void> {
