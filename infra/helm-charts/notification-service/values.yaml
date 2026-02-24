@@ -28,3 +28,5 @@ env:
     value: "mzii mbxm dtcz rjwy"
   - name: PORT
     value: "3000"
+  - name: NOTIFY_EMAIL_TO
+    value: "anandsinghtomar25@gmail.com"

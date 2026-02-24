@@ -14,14 +14,31 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Connect to Mailhog (using Env Vars with K8s defaults)
-    const transportConfig: TransportConfig = {
-      host: process.env.SMTP_HOST || 'mailhog.default.svc.cluster.local',
-      port: Number(process.env.SMTP_PORT) || 1025,
-      secure: false,
-      ignoreTLS: true,
-    };
-    this.transporter = nodemailer.createTransport(transportConfig);
+    const isGmail = !!process.env.GMAIL_USER;
+    
+    // Config for GMAIL (Real world)
+    if (isGmail) {
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD, 
+        },
+      });
+      console.log(`[Email] Configured for GMAIL (${process.env.GMAIL_USER})`);
+    } 
+    // Config for MAILHOG (Internal testing)
+    else {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'mailhog.default.svc.cluster.local',
+        port: Number(process.env.SMTP_PORT) || 1025,
+        secure: false,
+        ignoreTLS: true,
+      });
+      console.log(`[Email] Configured for MAILHOG`);
+    }
   }
 
  async sendApprovalEmail(requestId: string, batchSize: number, estimatedCost: string | number): Promise<void> {

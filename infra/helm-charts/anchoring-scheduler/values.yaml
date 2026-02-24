@@ -32,5 +32,3 @@ env:
     value: "minioadmin"
   - name: MINIO_BUCKET
     value: "ingest"
-  - name: NOTIFY_EMAIL_TO
-    value: "anandsinghtomar25@gmail.com"
