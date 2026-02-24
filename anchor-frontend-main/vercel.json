@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/auth-proxy/:path*",
+      "source": "/api/auth/:path*",
       "destination": "http://92.4.78.222/auth-server/:path*"
+    },
+    {
+      "source": "/api/backend/:path*",
+      "destination": "http://92.4.78.222/api/v1/:path*" 
     },
     {
       "source": "/(.*)",
