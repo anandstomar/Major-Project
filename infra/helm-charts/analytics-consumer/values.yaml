@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/analytics-consumer
-  tag: "07849d87d3746f87b3b89ab6403d7b2e67b57b5a"
+  tag: "c49fc722642188f15d94d34ac4d6615f92b1f08b"
   pullPolicy: Always
 spark:
   version: "3.5.1"
