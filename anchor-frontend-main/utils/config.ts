@@ -14,7 +14,7 @@
 // };
 
 
-src/config.ts
+//src/config.ts
 
 const API_PROXY = "/api/backend";
 const AUTH_PROXY = "/api/auth";
