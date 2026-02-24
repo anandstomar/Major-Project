@@ -18,7 +18,7 @@ export async function fetchWithRetry(
       
       // 👇 TEMPORARILY DISABLED so you don't get kicked out while debugging!
       localStorage.removeItem("access_token"); 
-      window.location.hash = "#/login"; // <-- This is the correct hash routing for later!
+      window.location.hash = "/login"; // <-- This is the correct hash routing for later!
       
       return response; // Return it so the app doesn't crash
     }

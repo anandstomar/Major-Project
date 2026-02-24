@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Anchors } from './components/Anchors';
-import { LandingPage } from './components/landingPage';
+import { LandingPage } from './components/landingPage'; // Ensure casing matches your file
 import { 
   Ingest, Validator, Scheduler, SearchPage, Analytics, 
   Notifications, Settings 
@@ -44,59 +44,59 @@ export default function App() {
     );
   }
 
-  // Helper to handle login and save token
   const handleLogin = (token?: string) => {
-    // If your Login component passes the token up, save it here!
     if (token && typeof token === 'string') {
       localStorage.setItem("access_token", token);
     }
     setIsAuthenticated(true);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    setIsAuthenticated(false);
+  };
+
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+
         <Route 
           path="/login" 
-          element={isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />} 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />} 
         />
         <Route 
           path="/signup" 
-          element={isAuthenticated ? <Navigate to="/" replace /> : <Signup onLogin={handleLogin} />} 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Signup onLogin={handleLogin} />} 
         />
+
         <Route 
-          path="/landing" 
-          element={<LandingPage />} 
-        />
-        
-        {/* 👇 FIX: Wrap ALL dashboard routes INSIDE the authenticated Layout route */}
-        <Route 
-          path="/" 
+          path="/dashboard" 
           element={
             isAuthenticated ? (
-              <Layout onLogout={() => {
-                localStorage.removeItem("access_token");
-                setIsAuthenticated(false);
-              }} />
+              <Layout onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" replace />
             )
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="anchors" element={<Anchors />} />
-          <Route path="ingest" element={<Ingest />} />
-          <Route path="validator" element={<Validator />} />
-          <Route path="escrow" element={<EscrowList />} />
-          <Route path="scheduler" element={<Scheduler />} />
-          <Route path="search" element={<SearchPage />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="/dashboard/anchors" element={<Anchors />} />
+          <Route path="/dashboard/ingest" element={<Ingest />} />
+          <Route path="/dashboard/validator" element={<Validator />} />
+          <Route path="/dashboard/escrow" element={<EscrowList />} />
+          <Route path="/dashboard/scheduler" element={<Scheduler />} />
+          <Route path="/dashboard/search" element={<SearchPage />} />
+          <Route path="/dashboard/analytics" element={<Analytics />} />
+          <Route path="/dashboard/notifications" element={<Notifications />} />
+          <Route path="/dashboard/settings" element={<Settings />} />
         </Route>
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       
       {isAuthenticated && <ChatAssistant />}
-    </HashRouter>
+    </BrowserRouter>
   );
 }

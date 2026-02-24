@@ -12,14 +12,14 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 // Product-focused navigation (DevOps/GitOps removed)
 const NAV_ITEMS: NavItem[] = [
   { id: '1', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { id: '2', label: 'Anchors', icon: Anchor, path: '/anchors' },
-  { id: 'escrow', label: 'Escrow', icon: ShieldCheck, path: '/escrow' },
-  { id: '3', label: 'Ingest', icon: UploadCloud, path: '/ingest' },
-  { id: '4', label: 'Validator', icon: CheckSquare, path: '/validator' },
-  { id: '5', label: 'Scheduler', icon: Calendar, path: '/scheduler' },
-  { id: '6', label: 'Search', icon: SearchIcon, path: '/search' },
-  { id: '7', label: 'Analytics', icon: BarChart2, path: '/analytics' },
-  { id: '8', label: 'Notifications', icon: Bell, path: '/notifications' },
+  { id: '2', label: 'Anchors', icon: Anchor, path: '/dashboard/anchors' },
+  { id: 'escrow', label: 'Escrow', icon: ShieldCheck, path: '/dashboard/escrow' },
+  { id: '3', label: 'Ingest', icon: UploadCloud, path: '/dashboard/ingest' },
+  { id: '4', label: 'Validator', icon: CheckSquare, path: '/dashboard/validator' },
+  { id: '5', label: 'Scheduler', icon: Calendar, path: '/dashboard/scheduler' },
+  { id: '6', label: 'Search', icon: SearchIcon, path: '/dashboard/search' },
+  { id: '7', label: 'Analytics', icon: BarChart2, path: '/dashboard/analytics' },
+  { id: '8', label: 'Notifications', icon: Bell, path: '/dashboard/notifications' },
 ];
 
 interface LayoutProps {
