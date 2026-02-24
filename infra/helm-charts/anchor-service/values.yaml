@@ -23,7 +23,7 @@ env:
   - name: MINIO_PORT
     value: "9000"
   - name: ANCHOR_SUBMITTER_ADDR
-    value: validator-grpc:50051
+    value: validator-grpc.default.svc.cluster.local:50051
   - name: KAFKA_BROKERS
     value: kafka-external:9092
 metrics:
