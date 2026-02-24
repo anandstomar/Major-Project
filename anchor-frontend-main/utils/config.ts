@@ -23,8 +23,8 @@ declare global {
     };
   }
 }
-
-export const AppConfig = window.__APP_CONFIG__ || {
+//window.__APP_CONFIG__ ||
+export const AppConfig =  {
   API_BASE_URL: "/api/backend", 
   KEYCLOAK_TOKEN_URL: "/api/auth/realms/provenance/protocol/openid-connect/token"
 };
