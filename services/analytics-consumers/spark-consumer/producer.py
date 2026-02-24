@@ -18,7 +18,7 @@ for i in range(10):
         "block_number": i,
         "submitted_at": datetime.datetime.utcnow().isoformat(),   # ISO8601 string
         "submitter": "tester",
-        "status": "confirmed" if i % 2 == 0 else "pending",
+        "status": "OK" if i % 2 == 0 else "FAILED",
         "preview_ids": [],
         "events": [f"evt-{i}"]
     }
