@@ -15,16 +15,11 @@
 
 
 // src/config.ts
-declare global {
-  interface Window {
-    __APP_CONFIG__: {
-      API_BASE_URL: string;
-      KEYCLOAK_TOKEN_URL: string;
-    };
-  }
-}
-//window.__APP_CONFIG__ ||
-export const AppConfig =  {
-  API_BASE_URL: "/api/backend", 
-  KEYCLOAK_TOKEN_URL: "/api/auth/realms/provenance/protocol/openid-connect/token"
+
+const API_PROXY = "/api/backend";
+const AUTH_PROXY = "/api/auth";
+
+export const AppConfig = {
+  API_BASE_URL: API_PROXY, 
+  KEYCLOAK_TOKEN_URL: `${AUTH_PROXY}/realms/provenance/protocol/openid-connect/token`
 };
