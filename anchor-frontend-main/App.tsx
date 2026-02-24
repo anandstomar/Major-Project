@@ -81,6 +81,7 @@ export default function App() {
           }
         >
           <Route index element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/anchors" element={<Anchors />} />
           <Route path="/dashboard/ingest" element={<Ingest />} />
           <Route path="/dashboard/validator" element={<Validator />} />

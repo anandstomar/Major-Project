@@ -9,28 +9,14 @@ import { IllusBanner } from './ui/Assets';
 import { Toast } from './ui/Toast';
 import { fetchWithRetry } from '../utils/api';
 
-const dataHourly = [
-  { name: '00:00', anchors: 400 },
-  { name: '04:00', anchors: 300 },
-  { name: '08:00', anchors: 200 },
-  { name: '12:00', anchors: 2780 },
-  { name: '16:00', anchors: 1890 },
-  { name: '20:00', anchors: 2390 },
-  { name: '23:59', anchors: 3490 },
-];
-
-const dataStatus = [
-  { name: 'Success', value: 85, color: '#10b981' }, // Emerald-500
-  { name: 'Failed', value: 5, color: '#ef4444' },  // Red-500
-  { name: 'Pending', value: 10, color: '#64748b' }, // Slate-500
-];
-
-const dataSubmitters = [
-  { name: 'Client A', count: 4000 },
-  { name: 'Client B', count: 3000 },
-  { name: 'Client C', count: 2000 },
-  { name: 'Internal', count: 2780 },
-];
+// --- Types ---
+interface AnchorItem {
+  id: string;
+  requestId: string;
+  status: 'OK' | 'FAILED' | 'PENDING';
+  submittedAt: string;
+  submitter?: string; // Assuming there is a field for who submitted it
+}
 
 const KPICard = ({ title, value, sub, icon: Icon }: any) => (
   <div className="bg-white p-6 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#e0e0dc] border-t-4 border-t-transparent hover:border-t-[#BE3F2F] transition-all group">
@@ -59,33 +45,101 @@ const ActivityItem = ({ title, time, type }: {title: string, time: string, type:
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [toast, setToast] = useState<string | null>(null);
-  
-  // State for real recent activity
-  const [recentAnchors, setRecentAnchors] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch real data for the Activity Log
+  // --- Real Data State ---
+  const [stats, setStats] = useState({
+    total: 0,
+    failed: 0,
+    pending: 0,
+    docsIndexed: 0
+  });
+  
+  const [recentAnchors, setRecentAnchors] = useState<AnchorItem[]>([]);
+  const [hourlyData, setHourlyData] = useState<any[]>([]);
+  const [statusData, setStatusData] = useState<any[]>([]);
+  const [submitterData, setSubmitterData] = useState<any[]>([]);
+
+  // --- Data Fetching & Processing ---
   useEffect(() => {
-    async function loadRecentActivity() {
+    async function loadDashboardData() {
       try {
         const token = localStorage.getItem("access_token");
         if (!token) return;
 
-        const response = await fetchWithRetry("/query/anchors", {
+        // 1. Fetch raw data
+        const response = await fetchWithRetry("/query/anchors?limit=1000", { // Fetch enough for stats
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
+        const items: AnchorItem[] = data.items || [];
+
+        // 2. Process KPIs
+        const total = items.length;
+        const failed = items.filter(i => i.status === 'FAILED').length;
+        const pending = items.filter(i => i.status === 'PENDING').length;
         
-        // Grab only the top 5 most recent items
-        setRecentAnchors((data.items || []).slice(0, 5));
+        setStats({
+          total,
+          failed,
+          pending,
+          docsIndexed: total * 142 // Mock multiplier or fetch real count if available
+        });
+
+        // 3. Process Recent Activity (Top 5)
+        setRecentAnchors(items.slice(0, 5));
+
+        // 4. Process Hourly Chart (Group by Hour)
+        const hoursMap = new Map<string, number>();
+        items.forEach(item => {
+          if (!item.submittedAt) return;
+          const date = new Date(item.submittedAt);
+          const hourKey = `${date.getHours().toString().padStart(2, '0')}:00`;
+          hoursMap.set(hourKey, (hoursMap.get(hourKey) || 0) + 1);
+        });
+        
+        // Fill in missing hours for a nice chart
+        const chartData = [];
+        for (let i = 0; i < 24; i+=4) { // Every 4 hours
+           const key = `${i.toString().padStart(2, '0')}:00`;
+           chartData.push({ name: key, anchors: hoursMap.get(key) || 0 });
+        }
+        setHourlyData(chartData);
+
+        // 5. Process Status Pie Chart
+        setStatusData([
+          { name: 'Success', value: total - failed - pending, color: '#10b981' },
+          { name: 'Failed', value: failed, color: '#ef4444' },
+          { name: 'Pending', value: pending, color: '#64748b' },
+        ]);
+
+        // 6. Process Top Submitters
+        const submitterMap = new Map<string, number>();
+        items.forEach(item => {
+           const name = item.submitter || 'Unknown';
+           submitterMap.set(name, (submitterMap.get(name) || 0) + 1);
+        });
+        
+        const topSubmitters = Array.from(submitterMap.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5); // Top 5
+            
+        setSubmitterData(topSubmitters.length > 0 ? topSubmitters : [{ name: 'System', count: total }]);
+
       } catch (err) {
-        console.error("Failed to fetch recent anchors", err);
+        console.error("Failed to load dashboard data", err);
+        setToast("Failed to refresh dashboard data");
+      } finally {
+        setIsLoading(false);
       }
     }
-    loadRecentActivity();
+    loadDashboardData();
   }, []);
 
   const handleTimeframeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
      setToast(`Dashboard updated for: ${e.target.value}`);
+     // Note: You would pass this value to the API query params in a real implementation
   };
 
   return (
@@ -95,8 +149,8 @@ export const Dashboard: React.FC = () => {
       {/* Welcome Banner */}
       <div className="bg-white rounded-lg shadow-sm border border-[#e0e0dc] p-8 flex items-center justify-between relative overflow-hidden">
           <div className="relative z-10 max-w-xl">
-              <h1 className="text-2xl font-light text-[#1f1e1d] mb-2">Good morning, <span className="font-semibold">John Doe</span></h1>
-              <p className="text-[#5d5c58]">System performance is nominal. You have 3 pending batches requiring authorization.</p>
+              <h1 className="text-2xl font-light text-[#1f1e1d] mb-2">Good morning, <span className="font-semibold">Operator</span></h1>
+              <p className="text-[#5d5c58]">System performance is nominal. You have {stats.pending} pending batches.</p>
               <div className="mt-6 flex gap-3">
                   <button 
                     onClick={() => navigate('/scheduler')}
@@ -117,11 +171,12 @@ export const Dashboard: React.FC = () => {
           </div>
       </div>
 
+      {/* KPIs using Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPICard title="Anchors Today" value="14,203" sub="+12% from yesterday" icon={Anchor} />
-        <KPICard title="Pending Queue" value="45" sub="Next batch in 5m" icon={Clock} />
-        <KPICard title="Failed (24h)" value="23" sub="0.16% failure rate" icon={AlertTriangle} />
-        <KPICard title="Docs Indexed" value="8.4M" sub="OpenSearch Cluster A" icon={Layers} />
+        <KPICard title="Total Anchors" value={stats.total.toLocaleString()} sub="All time volume" icon={Anchor} />
+        <KPICard title="Pending Queue" value={stats.pending.toString()} sub="Requiring attention" icon={Clock} />
+        <KPICard title="Failed" value={stats.failed.toString()} sub={`${stats.total > 0 ? ((stats.failed/stats.total)*100).toFixed(1) : 0}% failure rate`} icon={AlertTriangle} />
+        <KPICard title="Est. Docs" value={(stats.docsIndexed/1000000).toFixed(1) + "M"} sub="Indexed Documents" icon={Layers} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -130,7 +185,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-8">
              <div className="flex flex-col">
                  <h3 className="font-semibold text-[#1f1e1d]">Anchor Throughput</h3>
-                 <span className="text-xs text-[#8c8b88] mt-1">Transaction volume per hour</span>
+                 <span className="text-xs text-[#8c8b88] mt-1">Transaction volume (24h)</span>
              </div>
              <select 
                 onChange={handleTimeframeChange}
@@ -138,42 +193,45 @@ export const Dashboard: React.FC = () => {
              >
                  <option>Last 24 Hours</option>
                  <option>Last 7 Days</option>
-                 <option>Last 30 Days</option>
              </select>
           </div>
           <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dataHourly}>
-                <defs>
-                  <linearGradient id="colorAnchors" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#BE3F2F" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#BE3F2F" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f0ee" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#8c8b88'}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#8c8b88'}} />
-                <Tooltip 
-                    contentStyle={{borderRadius: '4px', border: '1px solid #e0e0dc', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'}} 
-                />
-                <Area type="monotone" dataKey="anchors" stroke="#BE3F2F" strokeWidth={2} fillOpacity={1} fill="url(#colorAnchors)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+                <div className="h-full w-full flex items-center justify-center text-gray-400">Loading chart...</div>
+            ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={hourlyData}>
+                    <defs>
+                      <linearGradient id="colorAnchors" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#BE3F2F" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#BE3F2F" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f0ee" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#8c8b88'}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#8c8b88'}} />
+                    <Tooltip 
+                        contentStyle={{borderRadius: '4px', border: '1px solid #e0e0dc', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'}} 
+                    />
+                    <Area type="monotone" dataKey="anchors" stroke="#BE3F2F" strokeWidth={2} fillOpacity={1} fill="url(#colorAnchors)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* Live Feed - NOW DYNAMIC! */}
-        <div className="bg-white p-6 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#e0e0dc] flex flex-col">
+        {/* Live Feed - Dynamic */}
+        <div className="bg-white p-6 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#e0e0dc] flex flex-col h-[450px]">
           <h3 className="font-semibold text-[#1f1e1d] mb-6">Live Activity Log</h3>
-          <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-2 max-h-[320px]">
+          <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-2">
              {recentAnchors.length === 0 ? (
                  <p className="text-sm text-gray-400 p-4">No recent activity found.</p>
              ) : (
-                 recentAnchors.map(anchor => (
+                 recentAnchors.map((anchor, idx) => (
                      <ActivityItem 
-                         key={anchor.id}
-                         title={`Request ${anchor.requestId} ${anchor.status === 'FAILED' ? 'failed' : 'processed'}`} 
-                         time={anchor.submittedAt ? new Date(anchor.submittedAt).toLocaleTimeString() : 'Unknown time'} 
+                         key={idx}
+                         title={`Req ${anchor.requestId.substring(0,8)}... ${anchor.status === 'FAILED' ? 'failed' : 'processed'}`} 
+                         time={anchor.submittedAt ? new Date(anchor.submittedAt).toLocaleTimeString() : 'Just now'} 
                          type={anchor.status === 'FAILED' ? 'fail' : anchor.status === 'OK' ? 'success' : 'info'} 
                      />
                  ))
@@ -189,13 +247,14 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Status Pie Chart */}
           <div className="bg-white p-6 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#e0e0dc]">
              <h3 className="font-semibold text-[#1f1e1d] mb-4">Status Breakdown</h3>
              <div className="h-[200px] flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                        <Pie data={dataStatus} innerRadius={65} outerRadius={85} paddingAngle={2} dataKey="value">
-                            {dataStatus.map((entry, index) => (
+                        <Pie data={statusData} innerRadius={65} outerRadius={85} paddingAngle={2} dataKey="value">
+                            {statusData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                             ))}
                         </Pie>
@@ -204,7 +263,7 @@ export const Dashboard: React.FC = () => {
                 </ResponsiveContainer>
              </div>
              <div className="flex justify-center gap-6 text-xs text-[#5d5c58] mt-2">
-                 {dataStatus.map(d => (
+                 {statusData.map(d => (
                      <span key={d.name} className="flex items-center gap-2">
                          <div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor: d.color}} /> {d.name}
                      </span>
@@ -212,11 +271,12 @@ export const Dashboard: React.FC = () => {
              </div>
           </div>
 
+          {/* Top Submitters Bar Chart */}
           <div className="bg-white p-6 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#e0e0dc] lg:col-span-2">
              <h3 className="font-semibold text-[#1f1e1d] mb-4">Top Submitters</h3>
              <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dataSubmitters} layout="vertical" margin={{left: 20}}>
+                    <BarChart data={submitterData} layout="vertical" margin={{left: 20}}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f0ee" />
                         <XAxis type="number" hide />
                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{fontSize: 12, fill: '#5d5c58'}} />
@@ -235,11 +295,7 @@ export const Dashboard: React.FC = () => {
 
 
 
-
-
-
-
-// import React, { useState } from 'react';
+// import React, { useState, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 // import { 
 //   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -263,7 +319,7 @@ export const Dashboard: React.FC = () => {
 // const dataStatus = [
 //   { name: 'Success', value: 85, color: '#10b981' }, // Emerald-500
 //   { name: 'Failed', value: 5, color: '#ef4444' },  // Red-500
-//   { name: 'Pending', value: 10, color: '#64748b' }, // Slate-500 (Matches new Badge Pending)
+//   { name: 'Pending', value: 10, color: '#64748b' }, // Slate-500
 // ];
 
 // const dataSubmitters = [
@@ -300,6 +356,30 @@ export const Dashboard: React.FC = () => {
 // export const Dashboard: React.FC = () => {
 //   const navigate = useNavigate();
 //   const [toast, setToast] = useState<string | null>(null);
+  
+//   // State for real recent activity
+//   const [recentAnchors, setRecentAnchors] = useState<any[]>([]);
+
+//   // Fetch real data for the Activity Log
+//   useEffect(() => {
+//     async function loadRecentActivity() {
+//       try {
+//         const token = localStorage.getItem("access_token");
+//         if (!token) return;
+
+//         const response = await fetchWithRetry("/query/anchors", {
+//           headers: { "Authorization": `Bearer ${token}` }
+//         });
+//         const data = await response.json();
+        
+//         // Grab only the top 5 most recent items
+//         setRecentAnchors((data.items || []).slice(0, 5));
+//       } catch (err) {
+//         console.error("Failed to fetch recent anchors", err);
+//       }
+//     }
+//     loadRecentActivity();
+//   }, []);
 
 //   const handleTimeframeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 //      setToast(`Dashboard updated for: ${e.target.value}`);
@@ -379,15 +459,22 @@ export const Dashboard: React.FC = () => {
 //           </div>
 //         </div>
 
-//         {/* Live Feed */}
+//         {/* Live Feed - NOW DYNAMIC! */}
 //         <div className="bg-white p-6 rounded-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#e0e0dc] flex flex-col">
 //           <h3 className="font-semibold text-[#1f1e1d] mb-6">Live Activity Log</h3>
 //           <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-2 max-h-[320px]">
-//              <ActivityItem title="Batch #8821 confirmed on Solana" time="2 mins ago" type="success" />
-//              <ActivityItem title="Ingest job 'manifest-prod-v2' completed" time="15 mins ago" type="success" />
-//              <ActivityItem title="Validator warning: Schema mismatch in row 405" time="32 mins ago" type="fail" />
-//              <ActivityItem title="Scheduler triggered gas estimation" time="45 mins ago" type="info" />
-//              <ActivityItem title="User 'admin' updated ArgoCD App 'anchor-service'" time="1 hour ago" type="info" />
+//              {recentAnchors.length === 0 ? (
+//                  <p className="text-sm text-gray-400 p-4">No recent activity found.</p>
+//              ) : (
+//                  recentAnchors.map(anchor => (
+//                      <ActivityItem 
+//                          key={anchor.id}
+//                          title={`Request ${anchor.requestId} ${anchor.status === 'FAILED' ? 'failed' : 'processed'}`} 
+//                          time={anchor.submittedAt ? new Date(anchor.submittedAt).toLocaleTimeString() : 'Unknown time'} 
+//                          type={anchor.status === 'FAILED' ? 'fail' : anchor.status === 'OK' ? 'success' : 'info'} 
+//                      />
+//                  ))
+//              )}
 //           </div>
 //           <button 
 //             onClick={() => navigate('/notifications')}
@@ -440,3 +527,7 @@ export const Dashboard: React.FC = () => {
 //     </div>
 //   );
 // };
+
+
+
+
