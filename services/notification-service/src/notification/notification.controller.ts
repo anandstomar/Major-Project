@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { EmailService } from './email.service';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller('api/v1/notifications')
 export class NotificationController {
@@ -49,10 +50,4 @@ export class NotificationController {
   }
 }
 
-function EventPattern(arg0: string): (target: NotificationController, propertyKey: "handleNewBatch", descriptor: TypedPropertyDescriptor<(message: any) => Promise<void>>) => void | TypedPropertyDescriptor<...> {
-  throw new Error('Function not implemented.');
-}
-function Payload(): (target: NotificationController, propertyKey: "handleNewBatch", parameterIndex: 0) => void {
-  throw new Error('Function not implemented.');
-}
 
