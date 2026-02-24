@@ -9,30 +9,25 @@ interface TransportConfig {
   ignoreTLS: boolean;
 }
 
-interface MailOptions {
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-}
-
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Connect to the Mailhog service running in your K8s cluster
+    // Connect to Mailhog (using Env Vars with K8s defaults)
     const transportConfig: TransportConfig = {
-      host: 'mailhog.default.svc.cluster.local', // Internal K8s DNS
-      port: 1025, // Standard SMTP port for Mailhog
+      host: process.env.SMTP_HOST || 'mailhog.default.svc.cluster.local',
+      port: Number(process.env.SMTP_PORT) || 1025,
       secure: false,
       ignoreTLS: true,
     };
     this.transporter = nodemailer.createTransport(transportConfig);
   }
 
+  // 1. The "Human-in-the-Loop" Approval Email
   async sendApprovalEmail(requestId: string, batchSize: number, estimatedCost: string): Promise<void> {
-    const dashboardUrl = `http://localhost:5173/#/scheduler/`; // Update with your actual dashboard URL
+    // Allow this URL to be configured via ENV for production
+    const dashboardUrl = process.env.DASHBOARD_URL || `http://localhost:5173/#/scheduler?highlight=${requestId}`;
 
     const htmlContent = `
       <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e0e0dc; border-radius: 8px; max-width: 500px;">
@@ -65,12 +60,38 @@ export class EmailService {
     `;
 
     await this.transporter.sendMail({
-      from: process.env.EMAIL_FROM ||'"System Scheduler" <scheduler@internal.platform>',
-      to: process.env.NOTIFY_EMAIL_TO  || 'admin@company.com', // The admin email
+      from: process.env.EMAIL_FROM || '"System Scheduler" <scheduler@internal.platform>',
+      to: process.env.NOTIFY_EMAIL_TO || 'admin@company.com',
       subject: `⚠️ Approval Needed: Batch ${requestId.split('-')[0]}`,
       html: htmlContent,
     });
 
     console.log(`[Email] Sent approval request for ${requestId}`);
+  }
+
+  // 2. 👇 NEW: The Anchor Confirmation Email (Required for Success Notifications)
+  async sendAnchorNotification(msg: any): Promise<void> {
+    const subject = `Anchor ${msg.status?.toUpperCase() || 'UPDATE'}: ${msg.request_id}`;
+    
+    // Simple text email for status updates
+    const text = `
+      System Notification: Anchor Update
+      ----------------------------------
+      Request ID : ${msg.request_id}
+      Status     : ${msg.status}
+      Merkle Root: ${msg.merkle_root}
+      Tx Hash    : ${msg.tx_hash || 'Pending'}
+      Block      : ${msg.block_number || 'Pending'}
+      
+      Timestamp  : ${new Date().toISOString()}
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.EMAIL_FROM || '"Anchor Ops" <ops@internal.platform>',
+      to: process.env.NOTIFY_EMAIL_TO || 'admin@company.com',
+      subject,
+      text,
+    });
+    console.log(`[Email] Sent anchor notification for ${msg.request_id}`);
   }
 }

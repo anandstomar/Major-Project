@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { NotificationService } from './notification.service';
 import { EmailService } from './email.service';
-import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller('api/v1/notifications')
 export class NotificationController {
@@ -9,30 +9,40 @@ export class NotificationController {
     private readonly notificationService: NotificationService,
     private readonly emailService: EmailService
   ) {}
-  
-  @EventPattern('scheduler.request.created') // Make sure Scheduler emits this!
-  async handleNewBatch(@Payload() message: any) {
-    // message = { request_id: "req-123", size: 450, cost: "0.04 SOL" }
-    
-    console.log('Received new batch notification:', message);
-    
+
+  // ------------------------------------------
+  // 🟢 Kafka Listeners (Triggered by Microservice)
+  // ------------------------------------------
+
+  // 1. New "Human-in-the-Loop" Approval (From Scheduler)
+  @EventPattern('scheduler.request.created')
+  async handleApprovalRequest(@Payload() message: any) {
+    console.log('📧 Approval Required:', message);
     await this.emailService.sendApprovalEmail(
       message.request_id, 
-      message.size || 0,
-      message.estimated_gas || 'Unknown'
+      message.size, 
+      message.estimated_gas
     );
   }
 
-  @Get('health')
-  checkHealth() {
-    return { status: 'ok', service: 'notification-service', timestamp: new Date() };
+  // 2. Anchor Confirmation (From Anchor Service / Spark)
+  @EventPattern('anchors.completed')
+  async handleAnchorComplete(@Payload() message: any) {
+    console.log('✅ Anchor Complete:', message.request_id);
+    await this.notificationService.processAnchorEvent(message);
   }
+
 
   @Get('feed')
   getFeed() {
     return this.notificationService.getFeed();
   }
 
+  @Get('health')
+  checkHealth() {
+    return { status: 'OK', timestamp: new Date() };
+  }
+  
   
   @Get('rules')
   getRules() {
