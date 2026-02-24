@@ -9,6 +9,7 @@ export async function fetchWithRetry(
   
   const url = `${AppConfig.API_BASE_URL}${endpoint}`;
   
+  console.log(`Fetching: ${url} with options:`, options);
   
   try {
     const response = await fetch(url, options);
