@@ -50,7 +50,7 @@ export class EmailService {
         costDisplay = `${sol.toFixed(6)} SOL (${lamports} Lamports)`;
     }
 
-    const dashboardUrl = process.env.DASHBOARD_URL || `http://localhost:5173/#/scheduler`;
+    const dashboardUrl = process.env.DASHBOARD_URL || 'https://major-project-kappa-rosy.vercel.app/dashboard/scheduler';
 
     const htmlContent = `
       <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e0e0dc; border-radius: 8px; max-width: 500px;">
