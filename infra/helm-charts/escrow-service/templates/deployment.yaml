@@ -38,6 +38,8 @@ spec:
             # Fixed: Pointing exactly to where the Secret mounts the keypair
             - name: WALLET_KEYPATH
               value: "/keys/{{ .Values.env.WALLET_SECRET_KEY }}"
+            - name: DATABASE_URL
+              value: "{{ .Values.env.DATABASE_URL }}"
           volumeMounts:
             - name: escrow-json-config
               mountPath: /etc/credentials
