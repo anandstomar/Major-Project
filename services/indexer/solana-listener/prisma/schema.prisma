@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+  moduleFormat = "cjs"
+  previewFeatures = ["driverAdapters"]
+  output   = "../node_modules/.prisma/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Anchor {
+  id          Int      @id @default(autoincrement())
+  requestId   String   @unique @map("request_id")
+  merkleRoot  String?  @map("merkle_root")
+  status      String   @default("PENDING") 
+  submitter   String?
+  eventsJson  String?  @map("events_json")
+  txHash      String?  @map("tx_hash")
+  blockNumber String?  @map("block_number")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("anchors")
+}
+
+model IngestJob {
+  id        String   @id @default(uuid()) @db.Uuid
+  jobId     String   @unique @map("job_id")
+  filename  String   @db.VarChar(255)
+  fileSize  Int      @map("file_size")
+  mimetype  String?  @db.VarChar(100)
+  submitter String   @db.VarChar(255)
+  status    String   @default("PROCESSING") @db.VarChar(50)
+  rows      Int      @default(0)
+  duration  String?  @db.VarChar(50)
+  minioKey  String?  @map("minio_key")
+  dataCid   String?  @map("data_cid")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("ingest_jobs")
+}
+
+model Escrow {
+  escrowId    String   @id @map("escrow_id")
+  initializer String
+  beneficiary String
+  arbiter     String
+  amount      Float
+  status      String   @default("active")
+  txSig       String   @map("tx_sig")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("escrows")
+}

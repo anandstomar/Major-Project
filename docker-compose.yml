@@ -163,6 +163,7 @@
     container_name: query-service
     environment:
       - PORT=3000
+      - DATABASE_URL=postgresql://indexer:indexerpwd@postgres:5432/indexer?schema=public
     networks:
       - default
 
@@ -302,28 +303,134 @@
       - SOLANA_PROGRAM_ID=Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq
       - SOLANA_FEE_PAYER_PATH=/app/dev-fee-payer.json.json
       - SOLANA_IDL_PATH=/app/idl/anchor_program.json
+      - DATABASE_URL=postgresql://indexer:indexerpwd@postgres:5432/indexer?schema=public
+      - KAFKA_BROKERS=host.docker.internal:9092
+      - ANCHORS_REQUEST_TOPIC=anchors.request
+      - ANCHORS_COMPLETED_TOPIC=anchors.completed
+      - KAFKA_GROUP_ID=anchor-service-group
+      - MINIO_ENDPOINT=localhost
+      - MINIO_PORT=host.docker.internal:9000
+      - MINIO_USE_SSL=false
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=ingest
     volumes:
       - ./services/anchor-service/dev-fee-payer.json:/app/dev-fee-payer.json.json:ro
       - ./services/anchor-service/src/anchor_program.json:/app/idl/anchor_program.json:ro
     ports:
-      - "3000:3000"
+      - "4000:3000"
+      - "4320:4317" # OTLP gRPC for tracing
+      - "2110:2112" # Prometheus metrics
     depends_on:
+      - postgres
       - solana
+      - kafka
+        
 
-  indexer-solana:
-    container_name: indexer-solana
+  solana-listener:
+    build: 
+      context: ./services/indexer/solana-listener
+      dockerfile: Dockerfile.node
+    container_name: solana-listener
+    # OVERRIDE the default command to run the listener
+    command: ["node", "dist/solana-listener.js"]
+    environment:
+      - SOLANA_HTTP_RPC=http://solana:8899
+      - KAFKA_BROKERS=localhost:9092
+      - KAFKA_TOPIC=anchors.completed
+      - DATABASE_URL=postgresql://indexer:indexerpwd@postgres:5432/indexer?schema=public
+    depends_on:
+      - kafka
+
+  indexer-service-metrics:
     build:
       context: ./services/indexer/solana-listener
       dockerfile: Dockerfile.node
+    container_name: indexer-service-metrics
+    # OVERRIDE the default command to run the indexer
+    command: ["node", "dist/index.js"]
     environment:
-      - SOLANA_HTTP_RPC=http://solana:8899
-      - SOLANA_PROGRAM_ID=Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq
-      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_BROKERS=host.docker.internal:9092
       - KAFKA_TOPIC=anchors.completed
+      - DATABASE_URL=postgresql://indexer:indexerpwd@postgres:5432/indexer?schema=public
+      - OPENSEARCH_URL=http://opensearch:9200
+    ports:
+      - "8083:8083" # Prometheus metrics 
+      - "9200:9200" # OpenSearch (optional, only if you want to query it directly)
     depends_on:
-      # - solana
+      - postgres
       - kafka
 
+  # indexer-solana:
+  #   container_name: indexer-solana
+  #   build:
+  #     context: ./services/indexer/solana-listener
+  #     dockerfile: Dockerfile.node
+  #   environment:
+  #     - SOLANA_HTTP_RPC=http://solana:8899
+  #     - SOLANA_PROGRAM_ID=Fb7znUeRhH1pHHRd5cNtwTxFqL9AheKvDmU1MR4AZ5tq
+  #     - KAFKA_BROKERS=kafka:29092
+  #     - KAFKA_TOPIC=anchors.completed
+  #   depends_on:
+  #     # - solana
+  #     - kafka
+
+  
+  # ----------------------------------------
+  # AIRFLOW METADATA DATABASE
+  # ----------------------------------------
+  airflow-postgres:
+    image: postgres:15
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow_password
+      POSTGRES_DB: airflow
+    ports:
+      - "5433:5432" # Mapped to 5433 so it doesn't clash with your indexer Postgres!
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+
+  # ----------------------------------------
+  # AIRFLOW INITIALIZATION (Runs once and exits)
+  # ----------------------------------------
+  airflow-init:
+    image: apache/airflow:2.8.1
+    container_name: airflow-init
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow_password@airflow-postgres/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create --role Admin --username admin --password admin --email admin@example.com --firstname Admin --lastname User
+      "
+
+  # ----------------------------------------
+  # AIRFLOW WEBSERVER & SCHEDULER (The UI and the Brain)
+  # ----------------------------------------
+  airflow-webserver:
+    image: apache/airflow:2.8.1
+    container_name: airflow-webserver
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow_password@airflow-postgres/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false # Hides the messy default examples
+    command: bash -c "airflow scheduler & airflow webserver"
   
     
    

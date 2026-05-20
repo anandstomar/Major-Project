@@ -1,19 +1,29 @@
 FROM node:20-alpine AS build
+# Add openssl to Alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* tsconfig.json ./
 RUN npm ci
+
+COPY prisma ./prisma
+RUN npx prisma generate
 
 COPY src ./src
 RUN npm run build
 RUN cp src/anchor_program.json dist/anchor_program.json
 
 FROM node:20-alpine AS runtime
+# Add openssl to Alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json* ./
 RUN npm ci --production
+
+COPY prisma ./prisma
+RUN npx prisma generate
 
 COPY --from=build /app/dist ./dist
 

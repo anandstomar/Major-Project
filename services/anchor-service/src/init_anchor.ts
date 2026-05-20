@@ -1,4 +1,3 @@
-// init_anchor_with_logs.ts
 import * as anchor from "@project-serum/anchor";
 import fs from "fs";
 import path from "path";

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import * as Minio from 'minio';
 import dotenv from 'dotenv';
 import { SolanaClient } from './solana-client';
+import { startMetricsServer, initTracer } from './telemetry'
 
 dotenv.config();
 
@@ -33,6 +34,9 @@ const minioClient = new Minio.Client({
 
 async function run() {
   console.log("⏳ Starting Event-Driven Anchor Service (Solana Edition)...");
+
+  startMetricsServer();
+  initTracer();
   
   await prisma.$connect();
   console.log("✅ Connected to PostgreSQL");
