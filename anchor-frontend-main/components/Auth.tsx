@@ -25,7 +25,7 @@ export const Login: React.FC<AuthProps> = ({ onLogin }) => {
     setLoading(true);
 
     const PROXY_URL = "/auth-proxy/realms/provenance/protocol/openid-connect/token";
-    const API_BASE_URL = "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/token";
+    const API_BASE_URL = "http://80.225.243.212/auth-server/realms/provenance/protocol/openid-connect/token";
 
     try {
       // 1. Get the token directly from Keycloak
