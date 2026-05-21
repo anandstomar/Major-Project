@@ -9,8 +9,8 @@ imagePullSecrets:
   - name: ghcrpat
 env:
   - name: KEYCLOAK_ISSUER
-    value: "http://80.225.243.212/auth-server/realms/provenance"
+    value: "http://80.225.242.139/auth-server/realms/provenance"
   - name: KEYCLOAK_JWKS_URI
-    value: "http://80.225.243.212/auth-server/realms/provenance/protocol/openid-connect/certs"
+    value: "http://80.225.242.139/auth-server/realms/provenance/protocol/openid-connect/certs"
   - name: KEYCLOAK_URL
-    value: "http://80.225.243.212/auth-server"
+    value: "http://80.225.242.139/auth-server"
