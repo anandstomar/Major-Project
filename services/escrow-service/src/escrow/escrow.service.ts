@@ -15,7 +15,7 @@ export class EscrowService implements OnModuleInit {
   constructor(private prisma: PrismaService) {
     this.client = new EscrowClient();
 
-    const kafkaBrokers = (process.env.KAFKA_BOOTSTRAP || 'kafka:29092').split(',');
+    const kafkaBrokers = (process.env.KAFKA_BOOTSTRAP || 'kafka-external:9092').split(',');
     const kafka = new Kafka({ brokers: kafkaBrokers });
 
     this.kafkaProducer = kafka.producer();
