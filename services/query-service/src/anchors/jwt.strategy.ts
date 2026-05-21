@@ -12,11 +12,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: 'http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs',
+        jwksUri: 'http://80.225.242.139/auth-server/realms/provenance/protocol/openid-connect/certs',
       }),
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      issuer: 'http://92.4.78.222/auth-server/realms/provenance',
+      issuer: 'http://80.225.242.139/auth-server/realms/provenance',
     });
   }
 
