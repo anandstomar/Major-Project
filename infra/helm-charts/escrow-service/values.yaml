@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: ghcr.io/anandstomar/major-project/escrow-service
-  tag: "b6055efe45b0cb6c237cf6ae608c0bd17c67f5a3"
+  tag: "73bd918eb08a49214598836aef6d237ba8dffd23"
   pullPolicy: Always
 service:
   type: ClusterIP
