@@ -20,7 +20,7 @@ const MINIO_BUCKET = process.env.MINIO_BUCKET || "ingest";
 
 // ---- Keycloak JWT Auth Middleware ----
 const client = jwksClient({
-  jwksUri: 'http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs',
+  jwksUri: 'http://80.225.242.139/auth-server/realms/provenance/protocol/openid-connect/certs',
   cache: true,
   rateLimit: true,
 });

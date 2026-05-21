@@ -34,5 +34,8 @@ public class AnchorCompletedDto {
     @JsonProperty("events")
     public List<String> events;
 
+    @JsonProperty("updated_at")
+    public List<String> updated_at;
+
     // default constructor, getters/setters optional since Jackson can set public fields
 }

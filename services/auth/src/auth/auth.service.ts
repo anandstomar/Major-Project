@@ -20,7 +20,7 @@ export class AuthService {
 
 
   async registerUser(userData: any) {
-    const keycloakUrl = this.config.get<string>('KEYCLOAK_URL') || 'http://92.4.78.222/auth-server';
+    const keycloakUrl = this.config.get<string>('KEYCLOAK_URL') || 'http://80.225.242.139/auth-server';
     const realm = this.config.get<string>('KEYCLOAK_REALM') || 'provenance';
 
     // 1. Get an Admin Token from the 'master' realm

@@ -146,7 +146,7 @@ export const Ingest = () => {
           console.log("[DEBUG] Sending file to Express API...");
 
           // Force the fetch to hit your specific Server IP to ensure it hits the Express Ingress
-          const response = await fetch("http://92.4.78.222/api/v1/ingest/upload", {
+          const response = await fetch("http://80.225.242.139/api/v1/ingest/upload", {
               method: "POST",
               headers: { "Authorization": `Bearer ${token}` }, // No Content-Type header! Browser sets it automatically for FormData
               body: formData

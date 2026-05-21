@@ -12,8 +12,8 @@ export class JwtAuthStrategy extends PassportStrategy(JwtStrategy, 'jwt') {
   constructor(private readonly config: ConfigService) {
     // const keycloakUrl = 'http://92.4.78.222/auth-server';
     // const realm = 'provenance';
-    const issuer = 'http://92.4.78.222/auth-server/realms/provenance';
-    const jwksUri = "http://92.4.78.222/auth-server/realms/provenance/protocol/openid-connect/certs";
+    const issuer = 'http://80.225.242.139/auth-server/realms/provenance';
+    const jwksUri = "http://80.225.242.139/auth-server/realms/provenance/protocol/openid-connect/certs";
     // audience: optional. If you see audience problems, leave undefined or set to the token's aud/azp
    // const audience = config.get<string>('KEYCLOAK_AUDIENCE') || undefined;
 

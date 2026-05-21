@@ -165,7 +165,7 @@ export const Signup: React.FC<AuthProps> = ({ onLogin }) => {
       console.log("Sending registration to NestJS backend...");
 
       // Send the data to your NestJS backend, NOT directly to Keycloak
-      const response = await fetch("http://92.4.78.222/api/v1/auth/register", {
+      const response = await fetch("http://80.225.242.139/api/v1/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
