@@ -6,6 +6,10 @@ on:
       - 'services/ml-serving/**'
       - '.github/workflows/ml-deploy.yml'
 
+permissions:
+  contents: read
+  packages: write
+  
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
