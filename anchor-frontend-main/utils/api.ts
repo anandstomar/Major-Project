@@ -68,8 +68,13 @@ export async function fetchWithRetry(
   const url = `${AppConfig.API_BASE_URL}${endpoint}`;
   
   console.log(`Fetching: ${url} with options:`, options);
+
+  
   
   try {
+    if (!localStorage.getItem("access_token")) {
+      return new Response(null, { status: 401, statusText: "Unauthorized" });
+    }
     const response = await fetch(url, options);
 
     if (response.status === 401) {
