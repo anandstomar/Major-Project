@@ -73,7 +73,7 @@ export async function fetchWithRetry(
   
   try {
     if (!localStorage.getItem("access_token")) {
-      return new Response(null, { status: 401, statusText: "Unauthorized" });
+      return new Response(null, { status: 401, statusText: "token not found" });
     }
     const response = await fetch(url, options);
 
