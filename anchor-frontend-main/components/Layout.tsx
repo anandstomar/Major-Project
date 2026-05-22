@@ -11,7 +11,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 // Product-focused navigation (DevOps/GitOps removed)
 const NAV_ITEMS: NavItem[] = [
-  { id: '1', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+  { id: '1', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { id: '2', label: 'Anchors', icon: Anchor, path: '/dashboard/anchors' },
   { id: 'escrow', label: 'Escrow', icon: ShieldCheck, path: '/dashboard/escrow' },
   { id: '3', label: 'Ingest', icon: UploadCloud, path: '/dashboard/ingest' },
