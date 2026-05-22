@@ -13,7 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         rateLimit: true,
         jwksRequestsPerMinute: 5,
         //jwksUri: 'http://80.225.242.139/auth-server/realms/provenance/protocol/openid-connect/certs',
-        jwksUri: 'http://keycloak:80/realms/provenance/protocol/openid-connect/certs',
+        jwksUri: 'http://keycloak:80/auth-server/realms/provenance/protocol/openid-connect/certs',
       }),
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
