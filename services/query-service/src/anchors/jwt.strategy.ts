@@ -18,6 +18,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       issuer: 'http://80.225.242.139/auth-server/realms/provenance',
+      jsonWebTokenOptions: {
+        clockTolerance: 60, 
+      },
     });
   }
 
