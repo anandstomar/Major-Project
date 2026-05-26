@@ -34,6 +34,18 @@ spec:
               value: "{{ .Values.env.KAFKA_BROKERS }}"
             - name: DATABASE_URL
               value: "{{ .Values.env.DATABASE_URL }}"
+            - name: MINIO_ENDPOINT
+              value: "{{ .Values.env.MINIO_ENDPOINT }}"
+            - name: MINIO_PORT
+              value: "{{ .Values.env.MINIO_PORT }}"
+            - name: MINIO_USE_SSL
+              value: "{{ .Values.env.MINIO_USE_SSL }}"
+            - name: MINIO_ACCESS_KEY
+              value: "{{ .Values.env.MINIO_ACCESS_KEY }}"
+            - name: MINIO_SECRET_KEY
+              value: "{{ .Values.env.MINIO_SECRET_KEY }}"
+            - name: MINIO_BUCKET
+              value: "{{ .Values.env.MINIO_BUCKET }}"
           volumeMounts:
             - name: json-config
               mountPath: /var/idl
