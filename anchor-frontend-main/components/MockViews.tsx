@@ -3,7 +3,8 @@ import {
   UploadCloud, List, Code, PlayCircle, PauseCircle, FolderTree, Database, 
   Search as SearchIcon, Bell, Settings as SettingsIcon, Shield, Key, User,
   FileJson, Clock, RefreshCw, FileText, Activity, Cpu, Trash2, Plus, ArrowRight, Copy,
-  CheckCircle, XCircle, AlertCircle, ShieldAlert, X, CheckCircle2, Sparkles
+  CheckCircle, XCircle, AlertCircle, ShieldAlert, X, CheckCircle2, Sparkles,
+ Loader2
 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Status } from '../types';
@@ -84,6 +85,7 @@ export const Ingest = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false); 
 
   // Helper to format bytes to KB/MB
   const formatBytes = (bytes: number) => {
@@ -156,6 +158,7 @@ export const Ingest = () => {
 
           if (response.ok) {
               setToast(`✅ Successfully uploaded ${file.name}`);
+              setUploadSuccess(true);
               fetchJobs(true); // Refresh table
           } else {
               const errData = await response.json();
@@ -171,14 +174,81 @@ export const Ingest = () => {
       }
   };
 
-  const UploadTab = () => (
+//   const UploadTab = () => (
+//       <div className="max-w-5xl mx-auto space-y-10">
+//           <div 
+//               // 👇 Clicking anywhere in this box triggers the hidden input!
+//               onClick={() => !isUploading && fileInputRef.current?.click()}
+//               className="relative border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all cursor-pointer group"
+//           >
+//               {/* 👇 The input is now completely hidden, controlled by React */}
+//               <input 
+//                   type="file" 
+//                   ref={fileInputRef}
+//                   className="hidden" 
+//                   onChange={handleRealFileUpload}
+//                   accept=".json,.csv,.avro"
+//               />
+              
+//               <div className={`mb-6 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all ${isUploading ? 'animate-pulse' : ''}`}>
+//                   <IllusUpload />
+//               </div>
+//               <h3 className="text-xl font-medium text-[#1f1e1d]">
+//                   {isUploading ? 'Uploading...' : 'Upload Manifest'}
+//               </h3>
+//               <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Drag and drop JSON, AVRO, or CSV files here to start an ingestion job. Max size 500MB.</p>
+              
+//               <button 
+//                 className={`mt-8 ${btnPrimary} relative z-0`} 
+//                 disabled={isUploading}
+//                 onClick={(e) => {
+//                     e.stopPropagation(); // Prevents double-clicking
+//                     fileInputRef.current?.click();
+//                 }}
+//               >
+//                    {isUploading ? 'Processing...' : 'Select Files'}
+//               </button>
+//           </div>
+          
+//           <div>
+//               <SectionHeader title="Recent Uploads" />
+//               <Card>
+//                   {jobs.length === 0 && !isLoading && (
+//                       <div className="p-8 text-center text-gray-500 text-sm">No uploads found. Drag a file above to begin.</div>
+//                   )}
+//                   {/* Slicing to show only the top 5 most recent in this specific view */}
+//                   {jobs.slice(0, 5).map((job) => (
+//                       <div key={job.id} className="flex items-center justify-between p-5 border-b border-[#f1f0ee] last:border-0 hover:bg-[#fcfbf9]">
+//                           <div className="flex items-center gap-4">
+//                               <div className="p-2 bg-[#f4f2f0] rounded text-[#8c8b88]">
+//                                 <FileJson size={20} />
+//                               </div>
+//                               <div>
+//                                   <p className="text-sm font-medium text-[#1f1e1d]">{job.filename}</p>
+//                                   <p className="text-xs text-[#8c8b88] mt-0.5">{formatBytes(job.fileSize)} • {job.submitter}</p>
+//                               </div>
+//                           </div>
+//                           <div className="flex items-center gap-6">
+//                               <span className="text-xs text-[#8c8b88]">{new Date(job.createdAt).toLocaleTimeString()}</span>
+//                               <Badge status={job.status === 'OK' ? Status.OK : job.status === 'FAILED' ? Status.FAILED : Status.PROCESSING} size="sm" />
+//                           </div>
+//                       </div>
+//                   ))}
+//               </Card>
+//           </div>
+//       </div>
+//   );
+
+const uploadTabContent = (
       <div className="max-w-5xl mx-auto space-y-10">
           <div 
-              // 👇 Clicking anywhere in this box triggers the hidden input!
-              onClick={() => !isUploading && fileInputRef.current?.click()}
-              className="relative border-2 border-dashed border-[#d6d3d0] rounded bg-[#fbfbfa] p-16 flex flex-col items-center justify-center text-center hover:border-[#BE3F2F] hover:bg-white transition-all cursor-pointer group"
+              onClick={() => !isUploading && !uploadSuccess && fileInputRef.current?.click()}
+              className={`relative border-2 border-dashed rounded p-16 flex flex-col items-center justify-center text-center transition-all ${
+                  uploadSuccess 
+                    ? 'border-green-400 bg-green-50 cursor-default'
+                    : 'border-[#d6d3d0] bg-[#fbfbfa] hover:border-[#BE3F2F] hover:bg-white cursor-pointer group'
+              }`}
           >
-              {/* 👇 The input is now completely hidden, controlled by React */}
               <input 
                   type="file" 
                   ref={fileInputRef}
@@ -187,26 +257,41 @@ export const Ingest = () => {
                   accept=".json,.csv,.avro"
               />
               
-              <div className={`mb-6 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all ${isUploading ? 'animate-pulse' : ''}`}>
-                  <IllusUpload />
-              </div>
-              <h3 className="text-xl font-medium text-[#1f1e1d]">
-                  {isUploading ? 'Uploading...' : 'Upload Manifest'}
-              </h3>
-              <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Drag and drop JSON, AVRO, or CSV files here to start an ingestion job. Max size 500MB.</p>
-              
-              <button 
-                className={`mt-8 ${btnPrimary} relative z-0`} 
-                disabled={isUploading}
-                onClick={(e) => {
-                    e.stopPropagation(); // Prevents double-clicking
-                    fileInputRef.current?.click();
-                }}
-              >
-                  {isUploading ? 'Processing...' : 'Select Files'}
-              </button>
+              {uploadSuccess ? (
+                  /* ================= SUCCESS STATE ================= */
+                  <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                          <CheckCircle2 className="w-8 h-8 text-green-600" />
+                      </div>
+                      <h3 className="text-xl font-medium text-[#1f1e1d]">Upload Successful</h3>
+                      <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Your manifest has been added to the ingestion queue.</p>
+                  </div>
+              ) : (
+                  /* ================= UPLOAD / LOADING STATE ================= */
+                  <>
+                      <div className={`mb-6 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all ${isUploading ? 'animate-pulse' : ''}`}>
+                          <IllusUpload />
+                      </div>
+                      <h3 className="text-xl font-medium text-[#1f1e1d]">
+                          {isUploading ? 'Uploading...' : 'Upload Manifest'}
+                      </h3>
+                      <p className="text-sm text-[#8c8b88] mt-2 max-w-sm">Drag and drop JSON, AVRO, or CSV files here to start an ingestion job. Max size 500MB.</p>
+                      
+                      <button 
+                          className={`mt-8 ${btnPrimary} relative z-0`} 
+                          disabled={isUploading}
+                          onClick={(e) => {
+                              e.stopPropagation(); // Prevents double-clicking
+                              if (!isUploading) fileInputRef.current?.click();
+                          }}
+                      >
+                           {isUploading ? 'Processing...' : 'Select Files'}
+                      </button>
+                  </>
+              )}
           </div>
           
+          {/* ================= RECENT UPLOADS TABLE ================= */}
           <div>
               <SectionHeader title="Recent Uploads" />
               <Card>
@@ -399,7 +484,7 @@ export const Ingest = () => {
   );
 
   const tabs = [
-    { id: 'upload', label: 'Upload Manifest', icon: UploadCloud, content: <UploadTab /> },
+    { id: 'upload', label: 'Upload Manifest', icon: UploadCloud, content: uploadTabContent },
     { id: 'jobs', label: 'Ingest Jobs', icon: List, content: <JobsTab /> },
     { id: 'schema', label: 'Schema Registry', icon: Code, content: <SchemaTab /> },
   ];
