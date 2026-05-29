@@ -71,7 +71,7 @@ export default function App() {
         />
 
         <Route 
-          path="/dashboard" 
+          path="/" 
           element={
             isAuthenticated ? (
               <Layout onLogout={handleLogout} />
@@ -81,16 +81,16 @@ export default function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/anchors" element={<Anchors />} />
-          <Route path="/dashboard/ingest" element={<Ingest />} />
-          <Route path="/dashboard/validator" element={<Validator />} />
-          <Route path="/dashboard/escrow" element={<EscrowList />} />
-          <Route path="/dashboard/scheduler" element={<Scheduler />} />
-          <Route path="/dashboard/search" element={<SearchPage />} />
-          <Route path="/dashboard/analytics" element={<Analytics />} />
-          <Route path="/dashboard/notifications" element={<Notifications />} />
-          <Route path="/dashboard/settings" element={<Settings />} />
+          <Route path="dashboard" element={<Navigate to="/" replace />} />
+          <Route path="anchors" element={<Anchors />} />
+          <Route path="ingest" element={<Ingest />} />
+          <Route path="validator" element={<Validator />} />
+          <Route path="escrow" element={<EscrowList />} />
+          <Route path="scheduler" element={<Scheduler />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Catch-all redirect */}
