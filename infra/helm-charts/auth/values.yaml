@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/anandstomar/major-project/auth
-  tag: 05b34502f1d42d8b11224b3981d03f2d88fcaa47
+  tag: 2fa88674d51fc08868348cec4b03e14d6dd29e2d
   pullPolicy: Always
 service:
   type: ClusterIP
